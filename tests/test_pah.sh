@@ -70,31 +70,43 @@ mkdir -p "$TARGET"
 "$PAH" install "$TARGET" --dry-run > "$TMP_ROOT/dry-run.log"
 assert_contains "$TMP_ROOT/dry-run.log" "[DRY-RUN]"
 assert_contains "$TMP_ROOT/dry-run.log" "docs/devcontainer/devcontainer-standards.md"
+assert_contains "$TMP_ROOT/dry-run.log" "docs/git-workflow/git-workflow-standards.md"
 
 "$PAH" install "$TARGET"
 
 assert_file "$TARGET/docs/devcontainer/devcontainer-standards.md"
 assert_file "$TARGET/docs/devcontainer/devcontainer-standards.ko.md"
 assert_file "$TARGET/.cursor/rules/devcontainer-standards.mdc"
+assert_file "$TARGET/docs/git-workflow/git-workflow-standards.md"
+assert_file "$TARGET/docs/git-workflow/git-workflow-standards.ko.md"
+assert_file "$TARGET/.cursor/rules/git-workflow-standards.mdc"
 assert_file "$TARGET/AGENTS.md"
 assert_file "$TARGET/CLAUDE.md"
 assert_file "$TARGET/.harness/manifest.json"
 
 assert_contains "$TARGET/AGENTS.md" "<!-- pah:devcontainer:start -->"
 assert_contains "$TARGET/CLAUDE.md" "<!-- pah:devcontainer:start -->"
+assert_contains "$TARGET/AGENTS.md" "<!-- pah:git-workflow:start -->"
+assert_contains "$TARGET/CLAUDE.md" "<!-- pah:git-workflow:start -->"
 assert_contains "$TARGET/.cursor/rules/devcontainer-standards.mdc" "docs/devcontainer/devcontainer-standards.md"
+assert_contains "$TARGET/.cursor/rules/git-workflow-standards.mdc" "docs/git-workflow/git-workflow-standards.md"
 assert_not_contains "$TARGET/.cursor/rules/devcontainer-standards.mdc" "devcontainer-standards.ko.md"
+assert_not_contains "$TARGET/.cursor/rules/git-workflow-standards.mdc" "git-workflow-standards.ko.md"
 assert_not_file "$TARGET/.cursor/rules/harness-development.mdc"
 assert_contains "$ROOT/config/rule-domains.txt" "devcontainer"
 assert_file "$ROOT/templates/stubs/agent-blocks/devcontainer.md"
 assert_contains "$TARGET/.harness/manifest.json" '"devcontainer": {'
 assert_contains "$TARGET/.harness/manifest.json" '"path": "docs/devcontainer/devcontainer-standards.md"'
+assert_contains "$TARGET/.harness/manifest.json" '"git-workflow": {'
+assert_contains "$TARGET/.harness/manifest.json" '"path": "docs/git-workflow/git-workflow-standards.md"'
 assert_mode "$TARGET/.harness/manifest.json" 644
 
 "$PAH" verify "$TARGET"
 "$PAH" install "$TARGET"
 assert_count "$TARGET/AGENTS.md" "<!-- pah:devcontainer:start -->" 1
 assert_count "$TARGET/CLAUDE.md" "<!-- pah:devcontainer:start -->" 1
+assert_count "$TARGET/AGENTS.md" "<!-- pah:git-workflow:start -->" 1
+assert_count "$TARGET/CLAUDE.md" "<!-- pah:git-workflow:start -->" 1
 "$PAH" status "$TARGET" | grep -Fq "Personal-Agent-Harness installed" || fail "status did not report installed"
 
 SECOND="$TMP_ROOT/existing"
@@ -108,6 +120,12 @@ EOM
 "$PAH" install "$SECOND"
 assert_contains "$SECOND/AGENTS.md" "Keep this project-specific rule."
 assert_contains "$SECOND/AGENTS.md" "<!-- pah:devcontainer:start -->"
+assert_contains "$SECOND/AGENTS.md" "<!-- pah:git-workflow:start -->"
+SECOND_AGENTS_BACKUP="$(find "$SECOND/.harness/backups" -path '*/AGENTS.md' -type f | head -n 1)"
+[ -n "$SECOND_AGENTS_BACKUP" ] || fail "expected original AGENTS.md backup"
+assert_contains "$SECOND_AGENTS_BACKUP" "Keep this project-specific rule."
+assert_not_contains "$SECOND_AGENTS_BACKUP" "<!-- pah:devcontainer:start -->"
+assert_not_contains "$SECOND_AGENTS_BACKUP" "<!-- pah:git-workflow:start -->"
 
 "$PAH" verify "$SECOND"
 
@@ -131,6 +149,7 @@ cp -a "$ROOT" "$SETUP_PROJECT/Personal-Agent-Harness"
   ./Personal-Agent-Harness/setup.sh .
 )
 assert_file "$SETUP_PROJECT/docs/devcontainer/devcontainer-standards.md"
+assert_file "$SETUP_PROJECT/docs/git-workflow/git-workflow-standards.md"
 assert_file "$SETUP_PROJECT/.harness/manifest.json"
 "$PAH" verify "$SETUP_PROJECT"
 
@@ -141,6 +160,15 @@ echo "$UPDATE_MARKER" >> "$SETUP_PROJECT/Personal-Agent-Harness/standards/devcon
   PAH_SKIP_PULL=1 ./Personal-Agent-Harness/update.sh .
 )
 assert_contains "$SETUP_PROJECT/docs/devcontainer/devcontainer-standards.md" "$UPDATE_MARKER"
+"$PAH" verify "$SETUP_PROJECT"
+
+GIT_WORKFLOW_UPDATE_MARKER="pah-git-workflow-update-test-marker-$$"
+echo "$GIT_WORKFLOW_UPDATE_MARKER" >> "$SETUP_PROJECT/Personal-Agent-Harness/standards/git-workflow/git-workflow-standards.md"
+(
+  cd "$SETUP_PROJECT"
+  PAH_SKIP_PULL=1 ./Personal-Agent-Harness/update.sh .
+)
+assert_contains "$SETUP_PROJECT/docs/git-workflow/git-workflow-standards.md" "$GIT_WORKFLOW_UPDATE_MARKER"
 "$PAH" verify "$SETUP_PROJECT"
 
 HARNESS_DEV="$TMP_ROOT/harness-dev"
