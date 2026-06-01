@@ -1,0 +1,22 @@
+{
+  "name": "${localWorkspaceFolderBasename}",
+  "dockerComposeFile": "docker-compose.dev.yml",
+  "service": "workspace",
+  "workspaceFolder": "/home/vscode/${localWorkspaceFolderBasename}",
+  "remoteUser": "vscode",
+  "updateRemoteUserUID": true,
+  "initializeCommand": ".devcontainer/commands/initializeCommand.sh",
+  "postCreateCommand": ".devcontainer/commands/post-create.sh",
+  "features": {},
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "anthropic.claude-code",
+        "openai.chatgpt"
+      ]
+    }
+  },
+  "forwardPorts": [],
+  "portsAttributes": {},
+  "shutdownAction": "stopCompose"
+}

@@ -1,0 +1,11 @@
+services:
+  workspace:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        CLAUDE_CODE_VERSION: ${CLAUDE_CODE_VERSION:?Set CLAUDE_CODE_VERSION in .devcontainer/.env}
+        CODEX_CLI_VERSION: ${CODEX_CLI_VERSION:?Set CODEX_CLI_VERSION in .devcontainer/.env}
+    volumes:
+      - ..:${containerWorkspaceFolder}:cached
+    command: sleep infinity

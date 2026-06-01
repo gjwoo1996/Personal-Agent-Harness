@@ -1,0 +1,18 @@
+---
+description: Dev container standards managed by Personal-Agent-Harness
+globs: .devcontainer/**,**/docker-compose*.yml,**/Dockerfile,**/.env.example
+alwaysApply: false
+harness-managed: true
+---
+
+# Dev Container Standards
+
+When handling dev-container-related work, first read:
+
+`docs/devcontainer/devcontainer-standards.md`
+
+Follow that English document as the authoritative source for dev container decisions.
+
+Do not use Korean translations (`*.ko.md`) as AI rule sources. They exist only for human reading.
+
+If the standard does not fit a project, document the exception in that project's `.devcontainer/README.md`.
