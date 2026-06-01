@@ -1,60 +1,58 @@
 # 문제 해결
 
-> **관련 문서:** [문서 목록](README.md) · [사용법](usage.md) · [CLI 레퍼런스](reference.md) · [README](../README.md)
+> **관련 문서:** [문서 목록](README.md) · [사용법](usage.md) · [CLI 레퍼런스](reference.md)
 
-하네스 적용·업데이트 중 문제가 생겼을 때 확인할 순서입니다.
-
-## 1. verify 실행
+먼저 verify와 dry-run을 실행합니다.
 
 ```bash
 ./Personal-Agent-Harness/bin/pah verify .
-```
-
-실패 메시지에 누락된 파일이나 잘못된 stub 참조가 표시됩니다.
-
-## 2. manifest 확인
-
-```bash
-cat .harness/manifest.json
-```
-
-하네스 버전, 설치 모드, 관리 파일 목록, 표준 문서 checksum을 확인합니다.
-
-## 3. 백업에서 이전 버전 확인
-
-install 또는 update 시 기존 관리 파일은 갱신 전에 백업됩니다.
-
-```text
-.harness/backups/<timestamp>/
-```
-
-가장 최근 타임스탬프 디렉터리에서 이전 파일을 찾아 수동 복구할 수 있습니다.
-
-## 4. dry-run으로 변경 미리보기
-
-```bash
 ./Personal-Agent-Harness/bin/pah install . --dry-run
 ```
 
-실제 변경 없이 어떤 파일이 생성·수정될지 확인합니다.
+갱신 전 파일은 `.harness/backups/<timestamp>/`에서 확인할 수 있습니다.
 
-## 자주 발생하는 상황
+## Registry 오류
 
-### `update.sh`에서 `git pull` 실패
+`config/rule-domains.txt`가 없거나 비어 있으면 기본 `rules` 설치를 진행할 수 없습니다.
 
-`update.sh`는 `git pull --ff-only`를 사용합니다. 로컬 harness clone에 커밋이 있거나 원격과 diverge하면 실패합니다.
+- `missing required file`: 등록 도메인의 패키지 파일이 누락됨
+- `duplicate rule domain id`: 같은 ID가 두 번 등록됨
+- `invalid rule domain id`: ID가 소문자 kebab-case가 아님
 
-- harness clone을 수정하지 않았는지 확인
-- 필요하면 `Personal-Agent-Harness/`를 삭제 후 다시 clone
+미완성 도메인은 registry에서 제거하고 패키지를 완성한 뒤 다시 등록합니다. `standards/*` 자동 탐색은 사용하지 않습니다.
 
-### 기존 `AGENTS.md` / `CLAUDE.md`와 충돌
+## Managed block 손상
 
-installer는 managed block만 갱신합니다. block 밖 내용은 유지됩니다. block 마커(`<!-- pah:devcontainer:start -->`)가 손상되었으면 [작동 방식](how-it-works.md)의 Managed block 섹션을 참고해 수정하세요.
+`AGENTS.md`와 `CLAUDE.md`의 각 `pah:<domain>` block은 start/end marker가 정확히 한 쌍이고 순서가 맞아야 합니다.
 
-### devcontainer 스캐폴드가 설치되지 않음
+```markdown
+<!-- pah:git-workflow:start -->
+...
+<!-- pah:git-workflow:end -->
+```
 
-기본 `setup.sh` / `update.sh`는 `rules`만 설치합니다. 스캐폴드가 필요하면 [사용법](usage.md)의 선택적 devcontainer 섹션을 참고하세요.
+중복, 누락, 순서 뒤바뀜을 수정한 뒤 install을 다시 실행합니다. 도메인 block은 서로 독립적으로 갱신됩니다.
 
-### verify: AI stub이 ko.md를 참조
+## AI stub이 ko 문서를 참조
 
-AI stub은 영문 표준(`devcontainer-standards.md`)만 규칙 출처로 참조해야 합니다. stub 파일을 수동 편집했다면 ko.md 참조를 제거하고 `./Personal-Agent-Harness/setup.sh` 또는 `update.sh`로 다시 적용하세요.
+AI stub은 `docs/<domain>/<domain>-standards.md`만 규칙 출처로 참조해야 합니다. `*.ko.md` 참조를 제거한 뒤 install 또는 update를 다시 실행합니다.
+
+## Manifest 불일치
+
+`verify`는 현재 설치 파일에서 canonical manifest를 다시 생성해 `.harness/manifest.json`과 비교합니다. checksum, 도메인 순서, 관리 파일 목록이 다르면 install 또는 update를 다시 실행합니다.
+
+```bash
+./Personal-Agent-Harness/update.sh
+```
+
+## `update.sh`의 `git pull` 실패
+
+`update.sh`는 `git pull --ff-only`를 사용합니다. harness clone의 로컬 커밋이나 원격과의 diverge 여부를 확인합니다.
+
+## Devcontainer 스캐폴드가 없음
+
+스캐폴드는 기본 `rules` 설치와 별도입니다.
+
+```bash
+./Personal-Agent-Harness/bin/pah install . --components rules,devcontainer,gitignore
+```

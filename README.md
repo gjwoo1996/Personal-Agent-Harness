@@ -1,6 +1,8 @@
 # Personal-Agent-Harness
 
-개인 개발 표준(데브컨테이너 + AI 에이전트 규칙)을 프로젝트에 적용하는 하네스입니다.
+개인 개발 표준과 AI 에이전트 규칙을 프로젝트에 적용하는 하네스입니다.
+
+기본 `rules` 설치에는 devcontainer와 git-workflow 규칙 도메인이 포함됩니다.
 
 ## 사용법
 
