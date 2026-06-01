@@ -4,6 +4,19 @@
 
 기본 `rules` 설치에는 devcontainer와 git-workflow 규칙 도메인이 포함됩니다.
 
+## 환경 요구사항
+
+| 항목 | 필수 여부 | 용도 |
+|------|-----------|------|
+| bash 4+ | 필수 | CLI 실행 |
+| git | 필수 | `update.sh` pull, 대상 프로젝트 관리 |
+| jq | **권장** | enforcement hooks 설치 — 없으면 advisory 모드로 동작 |
+| Claude Code | 권장 | `.claude/settings.json` hooks 실행 |
+
+> **jq 없을 때:** `rules`는 정상 설치되고, hooks 설치는 건너뜁니다(`WARNING: jq not found` 출력). AI가 표준 문서를 자발적으로 읽는 advisory 방식으로만 동작합니다.
+>
+> **jq 설치:** `brew install jq` (macOS) / `apt-get install jq` (Ubuntu/Debian)
+
 ## 사용법
 
 대상 **프로젝트 루트**에서 실행합니다.
