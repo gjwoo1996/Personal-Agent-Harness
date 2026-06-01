@@ -48,6 +48,22 @@ assert_command_fails() {
   fi
 }
 
+assert_mode() {
+  local file="$1"
+  local expected="$2"
+  local actual
+  actual="$(stat -c '%a' "$file")"
+  [ "$actual" = "$expected" ] || fail "expected mode $expected for $file, found $actual"
+}
+
+assert_dir_count() {
+  local dir="$1"
+  local expected="$2"
+  local actual
+  actual="$(find "$dir" -mindepth 1 -maxdepth 1 -type d | wc -l)"
+  [ "$actual" = "$expected" ] || fail "expected $expected directories in $dir, found $actual"
+}
+
 TARGET="$TMP_ROOT/project"
 mkdir -p "$TARGET"
 
@@ -73,6 +89,7 @@ assert_contains "$ROOT/config/rule-domains.txt" "devcontainer"
 assert_file "$ROOT/templates/stubs/agent-blocks/devcontainer.md"
 assert_contains "$TARGET/.harness/manifest.json" '"devcontainer": {'
 assert_contains "$TARGET/.harness/manifest.json" '"path": "docs/devcontainer/devcontainer-standards.md"'
+assert_mode "$TARGET/.harness/manifest.json" 644
 
 "$PAH" verify "$TARGET"
 "$PAH" install "$TARGET"
@@ -134,5 +151,45 @@ assert_contains "$HARNESS_DEV/.cursor/rules/harness-development.mdc" "Personal-A
 assert_contains "$HARNESS_DEV/.cursor/rules/harness-development.mdc" "adding-rule-domains.md"
 assert_not_file "$HARNESS_DEV/docs/devcontainer/devcontainer-standards.md"
 assert_not_file "$HARNESS_DEV/AGENTS.md"
+
+BROKEN_BLOCK="$TMP_ROOT/broken-block"
+mkdir -p "$BROKEN_BLOCK"
+cat > "$BROKEN_BLOCK/AGENTS.md" <<'EOM'
+# Existing Agent Rules
+
+<!-- pah:devcontainer:start -->
+Damaged managed block without an end marker.
+
+PROJECT_RULE_MUST_SURVIVE
+EOM
+cp "$BROKEN_BLOCK/AGENTS.md" "$TMP_ROOT/broken-block-agents.before"
+assert_command_fails "$PAH" install "$BROKEN_BLOCK"
+cmp -s "$TMP_ROOT/broken-block-agents.before" "$BROKEN_BLOCK/AGENTS.md" || fail "damaged AGENTS.md changed during failed install"
+assert_not_file "$BROKEN_BLOCK/docs/devcontainer/devcontainer-standards.md"
+
+BROKEN_ROOT="$TMP_ROOT/broken-registry"
+cp -a "$ROOT" "$BROKEN_ROOT"
+printf '\nmissing-domain\n' >> "$BROKEN_ROOT/config/rule-domains.txt"
+BROKEN_TARGET="$TMP_ROOT/broken-target"
+mkdir -p "$BROKEN_TARGET"
+assert_command_fails "$BROKEN_ROOT/bin/pah" install "$BROKEN_TARGET"
+assert_not_file "$BROKEN_TARGET/docs/devcontainer/devcontainer-standards.md"
+assert_not_file "$BROKEN_TARGET/.harness/manifest.json"
+
+BACKUP_TARGET="$TMP_ROOT/backup-target"
+mkdir -p "$BACKUP_TARGET"
+printf '# Existing Agent Rules\n' > "$BACKUP_TARGET/AGENTS.md"
+"$PAH" install "$BACKUP_TARGET"
+printf '\nProject rule after first install.\n' >> "$BACKUP_TARGET/AGENTS.md"
+"$PAH" install "$BACKUP_TARGET"
+printf '\nProject rule after second install.\n' >> "$BACKUP_TARGET/AGENTS.md"
+"$PAH" install "$BACKUP_TARGET"
+assert_dir_count "$BACKUP_TARGET/.harness/backups" 3
+
+MANIFEST_TARGET="$TMP_ROOT/manifest-target"
+mkdir -p "$MANIFEST_TARGET"
+"$PAH" install "$MANIFEST_TARGET"
+sed -i 's/"sha256": "[^"]*"/"sha256": "damaged"/' "$MANIFEST_TARGET/.harness/manifest.json"
+assert_command_fails "$PAH" verify "$MANIFEST_TARGET"
 
 echo "All pah tests passed"
