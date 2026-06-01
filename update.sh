@@ -8,5 +8,5 @@ if [ "${PAH_SKIP_PULL:-0}" != "1" ]; then
   git -C "$ROOT" pull --ff-only
 fi
 
-"$ROOT/bin/pah" install "$TARGET" --components rules
+"$ROOT/bin/pah" install "$TARGET" --components rules,hooks
 "$ROOT/bin/pah" verify "$TARGET"

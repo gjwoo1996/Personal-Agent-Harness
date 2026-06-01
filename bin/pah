@@ -9,7 +9,7 @@ RULE_DOMAINS=()
 usage() {
   cat <<'USAGE'
 Usage:
-  pah install <target> [--dry-run] [--force] [--components rules,devcontainer,gitignore,harness-dev]
+  pah install <target> [--dry-run] [--force] [--components rules,devcontainer,gitignore,harness-dev,hooks]
   pah verify <target>
   pah status <target>
 USAGE
@@ -50,7 +50,7 @@ validate_components() {
   [ "${#requested[@]}" -gt 0 ] || die "--components requires at least one component"
   for component in "${requested[@]}"; do
     case "$component" in
-      rules|devcontainer|gitignore|harness-dev) ;;
+      rules|devcontainer|gitignore|harness-dev|hooks) ;;
       "") die "--components contains an empty component" ;;
       *) die "unknown component: $component" ;;
     esac
@@ -316,6 +316,12 @@ generate_manifest_file() {
       first=0
       printf '    "%s"' "$rel"
     done
+    for domain in "${RULE_DOMAINS[@]}"; do
+      [ -f "$target/.harness/hooks/$domain.hook.sh" ] || continue
+      [ "$first" = "1" ] || printf ',\n'
+      first=0
+      printf '    ".harness/hooks/%s.hook.sh"' "$domain"
+    done
     printf '\n  ]\n'
     printf '}\n'
   } > "$output"
@@ -405,6 +411,115 @@ install_devcontainer_scaffold() {
   done < <(find "$src_dir" -type f | sort)
 }
 
+jq_available() {
+  command -v jq >/dev/null 2>&1
+}
+
+read_hook_matchers() {
+  local hook_src="$1"
+  grep '^# PAH_MATCHERS:' "$hook_src" | sed 's/^# PAH_MATCHERS:[[:space:]]*//'
+}
+
+merge_settings_json() {
+  local target="$1"
+  local backup_dir="$2"
+  local settings_file="$target/.claude/settings.json"
+  local domain
+  local matchers
+  local matcher
+  local matcher_arr
+  local pah_hooks='[]'
+
+  for domain in "${RULE_DOMAINS[@]}"; do
+    local hook_src="$ROOT/templates/stubs/hooks/$domain.hook.sh"
+    [ -f "$hook_src" ] || continue
+    matchers="$(read_hook_matchers "$hook_src")"
+    [ -n "$matchers" ] || continue
+    IFS=',' read -r -a matcher_arr <<< "$matchers"
+    for matcher in "${matcher_arr[@]}"; do
+      matcher="${matcher#"${matcher%%[![:space:]]*}"}"
+      matcher="${matcher%"${matcher##*[![:space:]]}"}"
+      [ -n "$matcher" ] || continue
+      pah_hooks="$(printf '%s' "$pah_hooks" | jq \
+        --arg m "$matcher" \
+        --arg cmd "bash .harness/hooks/$domain.hook.sh" \
+        '. + [{matcher: $m, hooks: [{type: "command", command: $cmd}]}]')"
+    done
+  done
+
+  mkdir -p "$target/.claude"
+  backup_file "$target" ".claude/settings.json" "$backup_dir"
+
+  local tmp
+  tmp="$(mktemp "${settings_file}.tmp.XXXXXX")"
+
+  if [ ! -f "$settings_file" ]; then
+    chmod 644 "$tmp"
+    jq -n --argjson pah "$pah_hooks" \
+      '{hooks: {PreToolUse: $pah}}' > "$tmp" \
+      || { rm -f "$tmp"; die "failed to create .claude/settings.json"; }
+  else
+    chmod "$(stat -c '%a' "$settings_file")" "$tmp"
+    jq \
+      --argjson pah "$pah_hooks" \
+      '.hooks.PreToolUse = (
+        ((.hooks.PreToolUse // []) |
+         map(
+           .hooks = (.hooks | map(select(.command | startswith("bash .harness/hooks/") | not)))
+         ) |
+         map(select(.hooks | length > 0))
+        ) + $pah
+      )' \
+      "$settings_file" > "$tmp" \
+      || { rm -f "$tmp"; die "failed to merge .claude/settings.json"; }
+  fi
+  mv "$tmp" "$settings_file"
+}
+
+install_hooks_component() {
+  local target="$1"
+  local dry_run="$2"
+  local force="$3"
+  local backup_dir="$4"
+  local domain
+
+  if ! jq_available; then
+    log "WARNING: jq not found — enforcement hooks skipped. Install jq to enable."
+    return 0
+  fi
+
+  [ "${#RULE_DOMAINS[@]}" -gt 0 ] || load_rule_domains
+
+  for domain in "${RULE_DOMAINS[@]}"; do
+    local hook_src="$ROOT/templates/stubs/hooks/$domain.hook.sh"
+    [ -f "$hook_src" ] || continue
+    if [ "$dry_run" = "1" ]; then
+      log "[DRY-RUN] CREATE  .harness/hooks/$domain.hook.sh"
+      continue
+    fi
+    copy_managed_file "$hook_src" "$target" ".harness/hooks/$domain.hook.sh" "0" "$force" "$backup_dir"
+    chmod +x "$target/.harness/hooks/$domain.hook.sh"
+  done
+
+  if [ "$dry_run" = "1" ]; then
+    log "[DRY-RUN] MERGE   .claude/settings.json (hooks)"
+    return 0
+  fi
+
+  merge_settings_json "$target" "$backup_dir"
+}
+
+verify_hooks_if_installed() {
+  local target="$1"
+  local domain
+
+  for domain in "${RULE_DOMAINS[@]}"; do
+    [ -f "$target/.harness/hooks/$domain.hook.sh" ] || continue
+    verify_file "$target/.claude/settings.json"
+    verify_contains "$target/.claude/settings.json" ".harness/hooks/$domain.hook.sh"
+  done
+}
+
 cmd_install() {
   local target="${1:-}"
   [ -n "$target" ] || die "install requires target"
@@ -412,7 +527,7 @@ cmd_install() {
 
   local dry_run=0
   local force=0
-  local components="rules"
+  local components="rules,hooks"
 
   while [ "$#" -gt 0 ]; do
     case "$1" in
@@ -436,6 +551,12 @@ cmd_install() {
   if has_component "$components" "rules"; then
     load_rule_domains
     preflight_rule_install "$target"
+  fi
+  if has_component "$components" "hooks" && jq_available; then
+    if ! has_component "$components" "rules"; then
+      [ -f "$target/.harness/manifest.json" ] || die "hooks component requires rules component or an existing rules installation"
+      [ "${#RULE_DOMAINS[@]}" -gt 0 ] || load_rule_domains
+    fi
   fi
 
   if [ "$dry_run" = "1" ]; then
@@ -464,7 +585,11 @@ cmd_install() {
     copy_managed_file "$ROOT/templates/harness-dev/harness-development.mdc" "$target" ".cursor/rules/harness-development.mdc" "$dry_run" "$force" "$backup_dir"
   fi
 
-  if has_component "$components" "rules"; then
+  if has_component "$components" "hooks"; then
+    install_hooks_component "$target" "$dry_run" "$force" "$backup_dir"
+  fi
+
+  if has_component "$components" "rules" || has_component "$components" "hooks"; then
     write_manifest "$target" "copy" "$dry_run" "$backup_dir"
   fi
   [ "$dry_run" = "1" ] || log "Installed Personal-Agent-Harness into $target"
@@ -505,6 +630,8 @@ cmd_verify() {
     require_rule_domain_source "$domain"
     verify_rule_domain "$domain" "$target"
   done
+
+  verify_hooks_if_installed "$target"
 
   local expected_manifest
   expected_manifest="$(mktemp)"
