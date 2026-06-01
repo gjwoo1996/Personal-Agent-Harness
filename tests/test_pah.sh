@@ -293,4 +293,78 @@ mkdir -p "$ESCAPE_TARGET"
 assert_contains "$ESCAPE_TARGET/AGENTS.md" 'Literal escapes: \d+ \n \\server'
 assert_contains "$ESCAPE_TARGET/CLAUDE.md" 'Literal escapes: \d+ \n \\server'
 
+# hooks: unknown component still rejected
+assert_command_fails "$PAH" install "$TMP_ROOT/unknown-component-target" --components typo
+
+if ! command -v jq >/dev/null 2>&1; then
+  # hooks: no jq — install succeeds with warning, hook files not created
+  HOOKS_TARGET="$TMP_ROOT/hooks-no-jq"
+  mkdir -p "$HOOKS_TARGET"
+  "$PAH" install "$HOOKS_TARGET" --components rules,hooks
+  assert_not_file "$HOOKS_TARGET/.harness/hooks/git-workflow.hook.sh"
+  assert_not_file "$HOOKS_TARGET/.claude/settings.json"
+  "$PAH" verify "$HOOKS_TARGET"
+else
+  # hooks: rules,hooks combined install
+  HOOKS_TARGET="$TMP_ROOT/hooks-target"
+  mkdir -p "$HOOKS_TARGET"
+  "$PAH" install "$HOOKS_TARGET" --components rules,hooks
+  assert_file "$HOOKS_TARGET/.harness/hooks/git-workflow.hook.sh"
+  assert_file "$HOOKS_TARGET/.harness/hooks/devcontainer.hook.sh"
+  assert_file "$HOOKS_TARGET/.claude/settings.json"
+  assert_contains "$HOOKS_TARGET/.claude/settings.json" '.harness/hooks/git-workflow.hook.sh'
+  assert_contains "$HOOKS_TARGET/.claude/settings.json" '.harness/hooks/devcontainer.hook.sh'
+  assert_contains "$HOOKS_TARGET/.claude/settings.json" '"PreToolUse"'
+
+  # hooks: verify passes after hooks install
+  "$PAH" verify "$HOOKS_TARGET"
+
+  # hooks: idempotent re-install does not duplicate entries
+  "$PAH" install "$HOOKS_TARGET" --components rules,hooks
+  BASH_COUNT="$(grep -c '"Bash"' "$HOOKS_TARGET/.claude/settings.json" || true)"
+  [ "$BASH_COUNT" = "1" ] || fail "expected exactly 1 Bash entry in settings.json after re-install, found $BASH_COUNT"
+  "$PAH" verify "$HOOKS_TARGET"
+
+  # hooks: manifest includes hook files
+  assert_contains "$HOOKS_TARGET/.harness/manifest.json" '.harness/hooks/git-workflow.hook.sh'
+  assert_contains "$HOOKS_TARGET/.harness/manifest.json" '.harness/hooks/devcontainer.hook.sh'
+
+  # hooks: verify fails if hook script is deleted
+  HOOKS_VERIFY_TARGET="$TMP_ROOT/hooks-verify-target"
+  mkdir -p "$HOOKS_VERIFY_TARGET"
+  "$PAH" install "$HOOKS_VERIFY_TARGET" --components rules,hooks
+  rm "$HOOKS_VERIFY_TARGET/.harness/hooks/git-workflow.hook.sh"
+  assert_command_fails "$PAH" verify "$HOOKS_VERIFY_TARGET"
+
+  # hooks: verify fails if settings.json hook entry is missing
+  HOOKS_SETTINGS_TARGET="$TMP_ROOT/hooks-settings-target"
+  mkdir -p "$HOOKS_SETTINGS_TARGET"
+  "$PAH" install "$HOOKS_SETTINGS_TARGET" --components rules,hooks
+  printf '{"hooks":{"PreToolUse":[]}}\n' > "$HOOKS_SETTINGS_TARGET/.claude/settings.json"
+  assert_command_fails "$PAH" verify "$HOOKS_SETTINGS_TARGET"
+
+  # hooks: hooks-only install on top of existing rules installation
+  HOOKS_ONLY_TARGET="$TMP_ROOT/hooks-only-target"
+  mkdir -p "$HOOKS_ONLY_TARGET"
+  "$PAH" install "$HOOKS_ONLY_TARGET" --components rules
+  "$PAH" install "$HOOKS_ONLY_TARGET" --components hooks
+  assert_file "$HOOKS_ONLY_TARGET/.harness/hooks/git-workflow.hook.sh"
+  assert_contains "$HOOKS_ONLY_TARGET/.claude/settings.json" '.harness/hooks/git-workflow.hook.sh'
+  "$PAH" verify "$HOOKS_ONLY_TARGET"
+
+  # hooks: hooks-only install without prior rules installation fails
+  HOOKS_NORULES_TARGET="$TMP_ROOT/hooks-norules-target"
+  mkdir -p "$HOOKS_NORULES_TARGET"
+  assert_command_fails "$PAH" install "$HOOKS_NORULES_TARGET" --components hooks
+
+  # hooks: dry-run shows expected output without creating files
+  HOOKS_DRYRUN_TARGET="$TMP_ROOT/hooks-dryrun-target"
+  mkdir -p "$HOOKS_DRYRUN_TARGET"
+  "$PAH" install "$HOOKS_DRYRUN_TARGET" --components rules
+  "$PAH" install "$HOOKS_DRYRUN_TARGET" --components rules,hooks --dry-run > "$TMP_ROOT/hooks-dry-run.log"
+  assert_contains "$TMP_ROOT/hooks-dry-run.log" "[DRY-RUN]"
+  assert_contains "$TMP_ROOT/hooks-dry-run.log" "git-workflow.hook.sh"
+  assert_not_file "$HOOKS_DRYRUN_TARGET/.harness/hooks/git-workflow.hook.sh"
+fi
+
 echo "All pah tests passed"
