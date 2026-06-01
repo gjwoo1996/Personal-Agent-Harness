@@ -204,6 +204,33 @@ assert_command_fails "$BROKEN_ROOT/bin/pah" install "$BROKEN_TARGET"
 assert_not_file "$BROKEN_TARGET/docs/devcontainer/devcontainer-standards.md"
 assert_not_file "$BROKEN_TARGET/.harness/manifest.json"
 
+DUPLICATE_ROOT="$TMP_ROOT/duplicate-registry"
+cp -a "$ROOT" "$DUPLICATE_ROOT"
+printf '\ndevcontainer\n' >> "$DUPLICATE_ROOT/config/rule-domains.txt"
+mkdir -p "$TMP_ROOT/duplicate-target"
+assert_command_fails "$DUPLICATE_ROOT/bin/pah" install "$TMP_ROOT/duplicate-target"
+
+INVALID_ROOT="$TMP_ROOT/invalid-registry"
+cp -a "$ROOT" "$INVALID_ROOT"
+printf '\nInvalid Domain\n' >> "$INVALID_ROOT/config/rule-domains.txt"
+mkdir -p "$TMP_ROOT/invalid-target"
+assert_command_fails "$INVALID_ROOT/bin/pah" install "$TMP_ROOT/invalid-target"
+
+UNREGISTERED_ROOT="$TMP_ROOT/unregistered-domain"
+cp -a "$ROOT" "$UNREGISTERED_ROOT"
+mkdir -p "$UNREGISTERED_ROOT/standards/unregistered"
+printf '# Unregistered standard\n' > "$UNREGISTERED_ROOT/standards/unregistered/unregistered-standards.md"
+printf '# Unregistered standard translation\n' > "$UNREGISTERED_ROOT/standards/unregistered/unregistered-standards.ko.md"
+mkdir -p "$TMP_ROOT/unregistered-target"
+"$UNREGISTERED_ROOT/bin/pah" install "$TMP_ROOT/unregistered-target"
+assert_not_file "$TMP_ROOT/unregistered-target/docs/unregistered/unregistered-standards.md"
+
+KO_REF_TARGET="$TMP_ROOT/ko-ref-target"
+mkdir -p "$KO_REF_TARGET"
+"$PAH" install "$KO_REF_TARGET"
+printf '\nRead docs/git-workflow/git-workflow-standards.ko.md\n' >> "$KO_REF_TARGET/.cursor/rules/git-workflow-standards.mdc"
+assert_command_fails "$PAH" verify "$KO_REF_TARGET"
+
 BACKUP_TARGET="$TMP_ROOT/backup-target"
 mkdir -p "$BACKUP_TARGET"
 printf '# Existing Agent Rules\n' > "$BACKUP_TARGET/AGENTS.md"
@@ -219,5 +246,30 @@ mkdir -p "$MANIFEST_TARGET"
 "$PAH" install "$MANIFEST_TARGET"
 sed -i 's/"sha256": "[^"]*"/"sha256": "damaged"/' "$MANIFEST_TARGET/.harness/manifest.json"
 assert_command_fails "$PAH" verify "$MANIFEST_TARGET"
+
+MALFORMED_MANIFEST_TARGET="$TMP_ROOT/malformed-manifest-target"
+mkdir -p "$MALFORMED_MANIFEST_TARGET"
+"$PAH" install "$MALFORMED_MANIFEST_TARGET"
+{
+  printf 'not-json\n'
+  cat "$MALFORMED_MANIFEST_TARGET/.harness/manifest.json"
+} > "$MALFORMED_MANIFEST_TARGET/.harness/manifest.json.tmp"
+mv "$MALFORMED_MANIFEST_TARGET/.harness/manifest.json.tmp" "$MALFORMED_MANIFEST_TARGET/.harness/manifest.json"
+assert_command_fails "$PAH" verify "$MALFORMED_MANIFEST_TARGET"
+
+UNKNOWN_COMPONENT_TARGET="$TMP_ROOT/unknown-component-target"
+mkdir -p "$UNKNOWN_COMPONENT_TARGET"
+assert_command_fails "$PAH" install "$UNKNOWN_COMPONENT_TARGET" --components typo
+assert_not_file "$UNKNOWN_COMPONENT_TARGET/.harness/manifest.json"
+
+ESCAPE_ROOT="$TMP_ROOT/escape-root"
+cp -a "$ROOT" "$ESCAPE_ROOT"
+sed -i '/<!-- pah:git-workflow:end -->/i Literal escapes: \\d+ \\n \\\\server' "$ESCAPE_ROOT/templates/stubs/agent-blocks/git-workflow.md"
+ESCAPE_TARGET="$TMP_ROOT/escape-target"
+mkdir -p "$ESCAPE_TARGET"
+"$ESCAPE_ROOT/bin/pah" install "$ESCAPE_TARGET"
+"$ESCAPE_ROOT/bin/pah" install "$ESCAPE_TARGET"
+assert_contains "$ESCAPE_TARGET/AGENTS.md" 'Literal escapes: \d+ \n \\server'
+assert_contains "$ESCAPE_TARGET/CLAUDE.md" 'Literal escapes: \d+ \n \\server'
 
 echo "All pah tests passed"
