@@ -91,6 +91,29 @@ AI stub에는 `*.ko.md`를 규칙 출처로 사용하지 말라고 명시되어 
 - 파일: `CLAUDE.md` (managed block)
 - `AGENTS.md`와 동일한 전략
 
+## 하네스 개발용 vs 대상 프로젝트용
+
+두 종류의 AI 연결을 **분리**합니다.
+
+| 구분 | 적용 시점 | 설치 |
+|------|-----------|------|
+| **대상 프로젝트용** | `.devcontainer/**` 등 | 기본 `pah install` (`rules`) |
+| **하네스 개발용** | PAH 저장소 수정 | 기본 install **제외**, opt-in |
+
+대상 프로젝트용:
+
+- `templates/stubs/` → `.cursor/rules/devcontainer-standards.mdc`, `AGENTS.md` / `CLAUDE.md` managed block
+- 모든 `pah install` 대상 프로젝트에 배포
+
+하네스 개발용:
+
+- `.cursor/rules/harness-development.mdc` — PAH 저장소 내부 (단독 repo)
+- `templates/harness-dev/` — monorepo opt-in (`--components harness-dev`)
+- `AGENTS.md` — PAH 저장소 루트 (install 대상 아님)
+- `docs/adding-rule-domains.md`, `docs/development.md` 참조
+
+`templates/stubs/AGENTS.md`에 harness-dev block을 넣지 않습니다. 대상 프로젝트 `AGENTS.md`에 개발용 지시가 섞이지 않도록 하기 위함입니다.
+
 ## Managed block
 
 installer가 소유하는 영역:

@@ -7,7 +7,7 @@ VERSION="$(tr -d '\n' < "$ROOT/VERSION")"
 usage() {
   cat <<'USAGE'
 Usage:
-  pah install <target> [--dry-run] [--force] [--components rules,devcontainer,gitignore]
+  pah install <target> [--dry-run] [--force] [--components rules,devcontainer,gitignore,harness-dev]
   pah verify <target>
   pah status <target>
 USAGE
@@ -288,7 +288,13 @@ cmd_install() {
     install_gitignore_block "$target" "$dry_run" "$backup_dir"
   fi
 
-  write_manifest "$target" "copy" "$dry_run"
+  if has_component "$components" "harness-dev"; then
+    copy_managed_file "$ROOT/templates/harness-dev/harness-development.mdc" "$target" ".cursor/rules/harness-development.mdc" "$dry_run" "$force" "$backup_dir"
+  fi
+
+  if has_component "$components" "rules"; then
+    write_manifest "$target" "copy" "$dry_run"
+  fi
   [ "$dry_run" = "1" ] || log "Installed Personal-Agent-Harness into $target"
 }
 

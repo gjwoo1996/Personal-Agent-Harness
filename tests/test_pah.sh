@@ -29,6 +29,10 @@ assert_not_contains() {
   fi
 }
 
+assert_not_file() {
+  [ ! -f "$1" ] || fail "did not expect file: $1"
+}
+
 TARGET="$TMP_ROOT/project"
 mkdir -p "$TARGET"
 
@@ -49,6 +53,7 @@ assert_contains "$TARGET/AGENTS.md" "<!-- pah:devcontainer:start -->"
 assert_contains "$TARGET/CLAUDE.md" "<!-- pah:devcontainer:start -->"
 assert_contains "$TARGET/.cursor/rules/devcontainer-standards.mdc" "docs/devcontainer/devcontainer-standards.md"
 assert_not_contains "$TARGET/.cursor/rules/devcontainer-standards.mdc" "devcontainer-standards.ko.md"
+assert_not_file "$TARGET/.cursor/rules/harness-development.mdc"
 
 "$PAH" verify "$TARGET"
 "$PAH" status "$TARGET" | grep -Fq "Personal-Agent-Harness installed" || fail "status did not report installed"
@@ -98,5 +103,14 @@ echo "$UPDATE_MARKER" >> "$SETUP_PROJECT/Personal-Agent-Harness/standards/devcon
 )
 assert_contains "$SETUP_PROJECT/docs/devcontainer/devcontainer-standards.md" "$UPDATE_MARKER"
 "$PAH" verify "$SETUP_PROJECT"
+
+HARNESS_DEV="$TMP_ROOT/harness-dev"
+mkdir -p "$HARNESS_DEV"
+"$PAH" install "$HARNESS_DEV" --components harness-dev
+assert_file "$HARNESS_DEV/.cursor/rules/harness-development.mdc"
+assert_contains "$HARNESS_DEV/.cursor/rules/harness-development.mdc" "Personal-Agent-Harness/**"
+assert_contains "$HARNESS_DEV/.cursor/rules/harness-development.mdc" "adding-rule-domains.md"
+assert_not_file "$HARNESS_DEV/docs/devcontainer/devcontainer-standards.md"
+assert_not_file "$HARNESS_DEV/AGENTS.md"
 
 echo "All pah tests passed"

@@ -15,6 +15,15 @@
 | [troubleshooting.md](./troubleshooting.md) | 문제 해결, 백업 복구 |
 | [development.md](./development.md) | 하네스 개발·테스트 |
 
+## 하네스 개발 (저장소 내부 전용)
+
+아래 문서는 `Personal-Agent-Harness` 저장소를 수정할 때만 참고합니다. **대상 프로젝트에 `pah install`로 복사되지 않습니다.**
+
+| 문서 | 내용 |
+|------|------|
+| [development.md](./development.md) | 테스트, 변경 후 확인 순서, **monorepo harness-dev 설정** |
+| [adding-rule-domains.md](./adding-rule-domains.md) | 새 규칙 도메인 추가 절차 (devcontainer 형식) |
+
 ## 진입점 스크립트
 
 | 스크립트 | 용도 |

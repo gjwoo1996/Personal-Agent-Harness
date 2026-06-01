@@ -1,0 +1,26 @@
+---
+description: Personal-Agent-Harness development (adding rule domains, bin/pah)
+globs: Personal-Agent-Harness/**
+alwaysApply: false
+harness-internal: true
+---
+
+# Personal-Agent-Harness Development
+
+When modifying **Personal-Agent-Harness itself** (not applying the harness to other projects), first read:
+
+- `Personal-Agent-Harness/docs/adding-rule-domains.md` — adding new rule domains
+- `Personal-Agent-Harness/docs/development.md` — harness development and testing
+
+Follow those documents for harness engineering work.
+
+Do not confuse this with target-project work:
+
+- Applying standards to other projects uses `setup.sh` / `update.sh` and devcontainer rules.
+- Harness development docs are **not** copied to target projects by default `pah install`.
+
+After changes to `bin/pah`, stubs, or standards, run:
+
+```bash
+bash Personal-Agent-Harness/tests/test_pah.sh
+```
