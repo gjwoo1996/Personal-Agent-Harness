@@ -43,6 +43,9 @@ validate_components() {
   local component
   local -a requested=()
 
+  case "$components" in
+    ""|,*|*,|*,,*) die "--components contains an empty component" ;;
+  esac
   IFS=',' read -r -a requested <<< "$components"
   [ "${#requested[@]}" -gt 0 ] || die "--components requires at least one component"
   for component in "${requested[@]}"; do

@@ -280,6 +280,8 @@ UNKNOWN_COMPONENT_TARGET="$TMP_ROOT/unknown-component-target"
 mkdir -p "$UNKNOWN_COMPONENT_TARGET"
 assert_command_fails "$PAH" install "$UNKNOWN_COMPONENT_TARGET" --components typo
 assert_not_file "$UNKNOWN_COMPONENT_TARGET/.harness/manifest.json"
+assert_command_fails "$PAH" install "$UNKNOWN_COMPONENT_TARGET" --components rules,
+assert_not_file "$UNKNOWN_COMPONENT_TARGET/.harness/manifest.json"
 
 ESCAPE_ROOT="$TMP_ROOT/escape-root"
 cp -a "$ROOT" "$ESCAPE_ROOT"
