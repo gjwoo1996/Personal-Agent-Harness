@@ -78,9 +78,51 @@ require_rule_domain_source() {
   verify_file "$ROOT/standards/$domain/$domain-standards.ko.md"
   verify_file "$ROOT/templates/stubs/agent-blocks/$domain.md"
   verify_file "$ROOT/templates/stubs/cursor/$domain-standards.mdc"
-  verify_contains "$ROOT/templates/stubs/agent-blocks/$domain.md" "<!-- pah:$domain:start -->"
-  verify_contains "$ROOT/templates/stubs/agent-blocks/$domain.md" "<!-- pah:$domain:end -->"
+  validate_managed_block "$ROOT/templates/stubs/agent-blocks/$domain.md" "$domain" required
   verify_contains "$ROOT/templates/stubs/cursor/$domain-standards.mdc" "docs/$domain/$domain-standards.md"
+  if grep -Fq "$domain-standards.ko.md" "$ROOT/templates/stubs/agent-blocks/$domain.md" "$ROOT/templates/stubs/cursor/$domain-standards.mdc"; then
+    die "AI stubs must not reference $domain-standards.ko.md as a rule source"
+  fi
+}
+
+validate_managed_block() {
+  local file="$1"
+  local domain="$2"
+  local presence="${3:-optional}"
+  local start="<!-- pah:$domain:start -->"
+  local end="<!-- pah:$domain:end -->"
+  local start_count
+  local end_count
+
+  [ -f "$file" ] || {
+    [ "$presence" = "required" ] && die "missing required file: $file"
+    return 0
+  }
+
+  start_count="$(grep -Fc "$start" "$file" || true)"
+  end_count="$(grep -Fc "$end" "$file" || true)"
+  if [ "$presence" != "required" ] && [ "$start_count" = "0" ] && [ "$end_count" = "0" ]; then
+    return 0
+  fi
+  [ "$start_count" = "1" ] || die "expected exactly one '$start' in $file"
+  [ "$end_count" = "1" ] || die "expected exactly one '$end' in $file"
+
+  awk -v start="$start" -v end="$end" '
+    $0 == start { seen_start=1; next }
+    $0 == end { seen_end=1; exit seen_start ? 0 : 1 }
+    END { if (!seen_start || !seen_end) exit 1 }
+  ' "$file" || die "managed block markers are out of order in $file"
+}
+
+preflight_rule_install() {
+  local target="$1"
+  local domain
+
+  for domain in "${RULE_DOMAINS[@]}"; do
+    require_rule_domain_source "$domain"
+    validate_managed_block "$target/AGENTS.md" "$domain"
+    validate_managed_block "$target/CLAUDE.md" "$domain"
+  done
 }
 
 sha256_file() {
@@ -158,6 +200,7 @@ merge_agent_block() {
 
   mkdir -p "$(dirname "$dest")"
   backup_file "$target" "$rel" "$backup_dir"
+  validate_managed_block "$dest" "$domain"
 
   local block
   block="$(extract_block "$block_src" "$domain")"
@@ -172,7 +215,8 @@ merge_agent_block() {
   fi
 
   local tmp
-  tmp="$(mktemp)"
+  tmp="$(mktemp "$dest.tmp.XXXXXX")"
+  chmod --reference="$dest" "$tmp"
   if grep -Fq "$start" "$dest"; then
     awk -v start="$start" -v end="$end" -v block="$block" '
       $0 == start {
@@ -222,7 +266,9 @@ write_manifest() {
   local rel
   local first
   mkdir -p "$manifest_dir"
-  tmp="$(mktemp)"
+  backup_file "$target" ".harness/manifest.json" "$backup_dir"
+  tmp="$(mktemp "$manifest_dir/manifest.json.tmp.XXXXXX")"
+  chmod 644 "$tmp"
 
   {
     printf '{\n'
@@ -365,15 +411,18 @@ cmd_install() {
   target="$(cd "$target" && pwd -P)"
   ensure_target "$target"
 
-  local backup_dir="$target/.harness/backups/$(date +%Y%m%dT%H%M%S)"
+  local backup_dir
   if [ "$dry_run" = "1" ]; then
+    backup_dir="$target/.harness/backups/dry-run"
     log "[DRY-RUN] Installing Personal-Agent-Harness into $target"
   else
-    mkdir -p "$backup_dir"
+    mkdir -p "$target/.harness/backups"
+    backup_dir="$(mktemp -d "$target/.harness/backups/$(date +%Y%m%dT%H%M%S).XXXXXX")"
   fi
 
   if has_component "$components" "rules"; then
     load_rule_domains
+    preflight_rule_install "$target"
     for domain in "${RULE_DOMAINS[@]}"; do
       install_rule_domain "$domain" "$target" "$dry_run" "$force" "$backup_dir"
     done
@@ -397,6 +446,35 @@ cmd_install() {
   [ "$dry_run" = "1" ] || log "Installed Personal-Agent-Harness into $target"
 }
 
+verify_rule_domain() {
+  local domain="$1"
+  local target="$2"
+  local en_rel="docs/$domain/$domain-standards.md"
+  local ko_rel="docs/$domain/$domain-standards.ko.md"
+  local cursor_rel=".cursor/rules/$domain-standards.mdc"
+  local en_sha
+  local ko_sha
+
+  verify_file "$target/$en_rel"
+  verify_file "$target/$ko_rel"
+  verify_file "$target/$cursor_rel"
+  validate_managed_block "$target/AGENTS.md" "$domain" required
+  validate_managed_block "$target/CLAUDE.md" "$domain" required
+  verify_contains "$target/$cursor_rel" "$en_rel"
+
+  if grep -Fq "$domain-standards.ko.md" "$target/$cursor_rel" "$target/AGENTS.md" "$target/CLAUDE.md"; then
+    die "AI stubs must not reference $domain-standards.ko.md as a rule source"
+  fi
+
+  en_sha="$(sha256_file "$target/$en_rel")"
+  ko_sha="$(sha256_file "$target/$ko_rel")"
+  verify_contains "$target/.harness/manifest.json" "\"$domain\": {"
+  verify_contains "$target/.harness/manifest.json" "\"path\": \"$en_rel\""
+  verify_contains "$target/.harness/manifest.json" "\"sha256\": \"$en_sha\""
+  verify_contains "$target/.harness/manifest.json" "\"path\": \"$ko_rel\""
+  verify_contains "$target/.harness/manifest.json" "\"sha256\": \"$ko_sha\""
+}
+
 cmd_verify() {
   local target="${1:-}"
   [ -n "$target" ] || die "verify requires target"
@@ -410,16 +488,7 @@ cmd_verify() {
   load_rule_domains
   for domain in "${RULE_DOMAINS[@]}"; do
     require_rule_domain_source "$domain"
-    verify_file "$target/docs/$domain/$domain-standards.md"
-    verify_file "$target/docs/$domain/$domain-standards.ko.md"
-    verify_file "$target/.cursor/rules/$domain-standards.mdc"
-    verify_contains "$target/.cursor/rules/$domain-standards.mdc" "docs/$domain/$domain-standards.md"
-    verify_contains "$target/AGENTS.md" "<!-- pah:$domain:start -->"
-    verify_contains "$target/CLAUDE.md" "<!-- pah:$domain:start -->"
-
-    if grep -Fq "$domain-standards.ko.md" "$target/.cursor/rules/$domain-standards.mdc" "$target/AGENTS.md" "$target/CLAUDE.md"; then
-      die "AI stubs must not reference $domain-standards.ko.md as a rule source"
-    fi
+    verify_rule_domain "$domain" "$target"
   done
 
   log "Personal-Agent-Harness verification passed: $target"
