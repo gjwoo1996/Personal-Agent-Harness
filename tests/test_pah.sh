@@ -79,4 +79,24 @@ assert_file "$SCAFFOLD/.devcontainer/README.md"
 assert_contains "$SCAFFOLD/.gitignore" "# pah:managed:start"
 "$PAH" verify "$SCAFFOLD"
 
+SETUP_PROJECT="$TMP_ROOT/setup-project"
+mkdir -p "$SETUP_PROJECT"
+cp -a "$ROOT" "$SETUP_PROJECT/Personal-Agent-Harness"
+(
+  cd "$SETUP_PROJECT"
+  ./Personal-Agent-Harness/setup.sh .
+)
+assert_file "$SETUP_PROJECT/docs/devcontainer/devcontainer-standards.md"
+assert_file "$SETUP_PROJECT/.harness/manifest.json"
+"$PAH" verify "$SETUP_PROJECT"
+
+UPDATE_MARKER="pah-update-test-marker-$$"
+echo "$UPDATE_MARKER" >> "$SETUP_PROJECT/Personal-Agent-Harness/standards/devcontainer/devcontainer-standards.md"
+(
+  cd "$SETUP_PROJECT"
+  PAH_SKIP_PULL=1 ./Personal-Agent-Harness/update.sh .
+)
+assert_contains "$SETUP_PROJECT/docs/devcontainer/devcontainer-standards.md" "$UPDATE_MARKER"
+"$PAH" verify "$SETUP_PROJECT"
+
 echo "All pah tests passed"
