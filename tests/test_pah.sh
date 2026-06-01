@@ -33,6 +33,10 @@ assert_not_file() {
   [ ! -f "$1" ] || fail "did not expect file: $1"
 }
 
+assert_not_dir() {
+  [ ! -d "$1" ] || fail "did not expect directory: $1"
+}
+
 assert_count() {
   local file="$1"
   local pattern="$2"
@@ -194,6 +198,7 @@ cp "$BROKEN_BLOCK/AGENTS.md" "$TMP_ROOT/broken-block-agents.before"
 assert_command_fails "$PAH" install "$BROKEN_BLOCK"
 cmp -s "$TMP_ROOT/broken-block-agents.before" "$BROKEN_BLOCK/AGENTS.md" || fail "damaged AGENTS.md changed during failed install"
 assert_not_file "$BROKEN_BLOCK/docs/devcontainer/devcontainer-standards.md"
+assert_not_dir "$BROKEN_BLOCK/.harness"
 
 BROKEN_ROOT="$TMP_ROOT/broken-registry"
 cp -a "$ROOT" "$BROKEN_ROOT"
@@ -203,6 +208,7 @@ mkdir -p "$BROKEN_TARGET"
 assert_command_fails "$BROKEN_ROOT/bin/pah" install "$BROKEN_TARGET"
 assert_not_file "$BROKEN_TARGET/docs/devcontainer/devcontainer-standards.md"
 assert_not_file "$BROKEN_TARGET/.harness/manifest.json"
+assert_not_dir "$BROKEN_TARGET/.harness"
 
 DUPLICATE_ROOT="$TMP_ROOT/duplicate-registry"
 cp -a "$ROOT" "$DUPLICATE_ROOT"
