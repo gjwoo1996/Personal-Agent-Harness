@@ -33,6 +33,21 @@ assert_not_file() {
   [ ! -f "$1" ] || fail "did not expect file: $1"
 }
 
+assert_count() {
+  local file="$1"
+  local pattern="$2"
+  local expected="$3"
+  local actual
+  actual="$(grep -Fc "$pattern" "$file" || true)"
+  [ "$actual" = "$expected" ] || fail "expected '$pattern' $expected time(s) in $file, found $actual"
+}
+
+assert_command_fails() {
+  if "$@"; then
+    fail "expected command to fail: $*"
+  fi
+}
+
 TARGET="$TMP_ROOT/project"
 mkdir -p "$TARGET"
 
@@ -54,8 +69,15 @@ assert_contains "$TARGET/CLAUDE.md" "<!-- pah:devcontainer:start -->"
 assert_contains "$TARGET/.cursor/rules/devcontainer-standards.mdc" "docs/devcontainer/devcontainer-standards.md"
 assert_not_contains "$TARGET/.cursor/rules/devcontainer-standards.mdc" "devcontainer-standards.ko.md"
 assert_not_file "$TARGET/.cursor/rules/harness-development.mdc"
+assert_contains "$ROOT/config/rule-domains.txt" "devcontainer"
+assert_file "$ROOT/templates/stubs/agent-blocks/devcontainer.md"
+assert_contains "$TARGET/.harness/manifest.json" '"devcontainer": {'
+assert_contains "$TARGET/.harness/manifest.json" '"path": "docs/devcontainer/devcontainer-standards.md"'
 
 "$PAH" verify "$TARGET"
+"$PAH" install "$TARGET"
+assert_count "$TARGET/AGENTS.md" "<!-- pah:devcontainer:start -->" 1
+assert_count "$TARGET/CLAUDE.md" "<!-- pah:devcontainer:start -->" 1
 "$PAH" status "$TARGET" | grep -Fq "Personal-Agent-Harness installed" || fail "status did not report installed"
 
 SECOND="$TMP_ROOT/existing"
