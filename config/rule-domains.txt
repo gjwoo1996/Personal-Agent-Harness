@@ -1,2 +1,3 @@
 # Default rule domains installed by the rules component.
 devcontainer
+git-workflow

@@ -1,0 +1,17 @@
+---
+description: Git workflow standards managed by Personal-Agent-Harness
+alwaysApply: true
+harness-managed: true
+---
+
+# Git Workflow Standards
+
+Before preparing commits or changing git history, first read:
+
+`docs/git-workflow/git-workflow-standards.md`
+
+Follow that English document as the authoritative source for git workflow decisions.
+
+Do not use Korean translations (`*.ko.md`) as AI rule sources. They exist only for human reading.
+
+If the standard does not fit a project, document the exception in that project's `docs/git-workflow/README.md`.
