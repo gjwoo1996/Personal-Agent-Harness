@@ -38,6 +38,22 @@ has_component() {
   esac
 }
 
+validate_components() {
+  local components="$1"
+  local component
+  local -a requested=()
+
+  IFS=',' read -r -a requested <<< "$components"
+  [ "${#requested[@]}" -gt 0 ] || die "--components requires at least one component"
+  for component in "${requested[@]}"; do
+    case "$component" in
+      rules|devcontainer|gitignore|harness-dev) ;;
+      "") die "--components contains an empty component" ;;
+      *) die "unknown component: $component" ;;
+    esac
+  done
+}
+
 verify_file() {
   local file="$1"
   [ -f "$file" ] || die "missing required file: $file"
@@ -167,16 +183,6 @@ copy_managed_file() {
   cp "$src" "$target/$rel"
 }
 
-extract_block() {
-  local src="$1"
-  local domain="$2"
-  awk -v start="<!-- pah:$domain:start -->" -v end="<!-- pah:$domain:end -->" '
-    $0 == start { flag=1 }
-    flag { print }
-    $0 == end { flag=0 }
-  ' "$src"
-}
-
 merge_agent_block() {
   local block_src="$1"
   local target="$2"
@@ -202,25 +208,27 @@ merge_agent_block() {
   backup_file "$target" "$rel" "$backup_dir"
   validate_managed_block "$dest" "$domain"
 
-  local block
-  block="$(extract_block "$block_src" "$domain")"
-  [ -n "$block" ] || die "missing managed block for rule domain: $domain"
-
   if [ ! -f "$dest" ]; then
     {
       printf '# %s\n\n' "$title"
-      printf '%s\n' "$block"
+      cat "$block_src"
     } > "$dest"
     return 0
   fi
 
   local tmp
   tmp="$(mktemp "$dest.tmp.XXXXXX")"
-  chmod --reference="$dest" "$tmp"
+  chmod "$(stat -c '%a' "$dest")" "$tmp"
   if grep -Fq "$start" "$dest"; then
-    awk -v start="$start" -v end="$end" -v block="$block" '
+    awk -v start="$start" -v end="$end" -v block_src="$block_src" '
+      function print_block(   line) {
+        while ((getline line < block_src) > 0) {
+          print line
+        }
+        close(block_src)
+      }
       $0 == start {
-        print block
+        print_block()
         skipping=1
         next
       }
@@ -233,7 +241,8 @@ merge_agent_block() {
   else
     {
       cat "$dest"
-      printf '\n%s\n' "$block"
+      printf '\n'
+      cat "$block_src"
     } > "$tmp"
   fi
   mv "$tmp" "$dest"
@@ -254,21 +263,13 @@ install_rule_domain() {
   merge_agent_block "$ROOT/templates/stubs/agent-blocks/$domain.md" "$target" "CLAUDE.md" "Claude Instructions" "$domain" "$dry_run" "$backup_dir"
 }
 
-write_manifest() {
+generate_manifest_file() {
   local target="$1"
   local mode="$2"
-  local dry_run="$3"
-  [ "$dry_run" = "1" ] && return 0
-
-  local manifest_dir="$target/.harness"
-  local tmp
+  local output="$3"
   local domain
   local rel
   local first
-  mkdir -p "$manifest_dir"
-  backup_file "$target" ".harness/manifest.json" "$backup_dir"
-  tmp="$(mktemp "$manifest_dir/manifest.json.tmp.XXXXXX")"
-  chmod 644 "$tmp"
 
   {
     printf '{\n'
@@ -314,7 +315,23 @@ write_manifest() {
     done
     printf '\n  ]\n'
     printf '}\n'
-  } > "$tmp"
+  } > "$output"
+}
+
+write_manifest() {
+  local target="$1"
+  local mode="$2"
+  local dry_run="$3"
+  local backup_dir="$4"
+  [ "$dry_run" = "1" ] && return 0
+
+  local manifest_dir="$target/.harness"
+  local tmp
+  mkdir -p "$manifest_dir"
+  backup_file "$target" ".harness/manifest.json" "$backup_dir"
+  tmp="$(mktemp "$manifest_dir/manifest.json.tmp.XXXXXX")"
+  chmod 644 "$tmp"
+  generate_manifest_file "$target" "$mode" "$tmp"
 
   mv "$tmp" "$manifest_dir/manifest.json"
 }
@@ -408,10 +425,16 @@ cmd_install() {
     shift
   done
 
+  validate_components "$components"
   target="$(cd "$target" && pwd -P)"
   ensure_target "$target"
 
   local backup_dir
+  if has_component "$components" "rules"; then
+    load_rule_domains
+    preflight_rule_install "$target"
+  fi
+
   if [ "$dry_run" = "1" ]; then
     backup_dir="$target/.harness/backups/dry-run"
     log "[DRY-RUN] Installing Personal-Agent-Harness into $target"
@@ -421,8 +444,6 @@ cmd_install() {
   fi
 
   if has_component "$components" "rules"; then
-    load_rule_domains
-    preflight_rule_install "$target"
     for domain in "${RULE_DOMAINS[@]}"; do
       install_rule_domain "$domain" "$target" "$dry_run" "$force" "$backup_dir"
     done
@@ -441,7 +462,7 @@ cmd_install() {
   fi
 
   if has_component "$components" "rules"; then
-    write_manifest "$target" "copy" "$dry_run"
+    write_manifest "$target" "copy" "$dry_run" "$backup_dir"
   fi
   [ "$dry_run" = "1" ] || log "Installed Personal-Agent-Harness into $target"
 }
@@ -452,8 +473,6 @@ verify_rule_domain() {
   local en_rel="docs/$domain/$domain-standards.md"
   local ko_rel="docs/$domain/$domain-standards.ko.md"
   local cursor_rel=".cursor/rules/$domain-standards.mdc"
-  local en_sha
-  local ko_sha
 
   verify_file "$target/$en_rel"
   verify_file "$target/$ko_rel"
@@ -466,13 +485,6 @@ verify_rule_domain() {
     die "AI stubs must not reference $domain-standards.ko.md as a rule source"
   fi
 
-  en_sha="$(sha256_file "$target/$en_rel")"
-  ko_sha="$(sha256_file "$target/$ko_rel")"
-  verify_contains "$target/.harness/manifest.json" "\"$domain\": {"
-  verify_contains "$target/.harness/manifest.json" "\"path\": \"$en_rel\""
-  verify_contains "$target/.harness/manifest.json" "\"sha256\": \"$en_sha\""
-  verify_contains "$target/.harness/manifest.json" "\"path\": \"$ko_rel\""
-  verify_contains "$target/.harness/manifest.json" "\"sha256\": \"$ko_sha\""
 }
 
 cmd_verify() {
@@ -490,6 +502,15 @@ cmd_verify() {
     require_rule_domain_source "$domain"
     verify_rule_domain "$domain" "$target"
   done
+
+  local expected_manifest
+  expected_manifest="$(mktemp)"
+  generate_manifest_file "$target" "copy" "$expected_manifest"
+  if ! cmp -s "$expected_manifest" "$target/.harness/manifest.json"; then
+    rm -f "$expected_manifest"
+    die "manifest does not match installed rule domains: $target/.harness/manifest.json"
+  fi
+  rm -f "$expected_manifest"
 
   log "Personal-Agent-Harness verification passed: $target"
 }
