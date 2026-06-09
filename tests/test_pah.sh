@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 PAH="$ROOT/bin/pah"
+HARNESS_VERSION="$(tr -d '\r\n' < "$ROOT/VERSION")"
 TMP_ROOT="$(mktemp -d)"
 trap 'rm -rf "$TMP_ROOT"' EXIT
 
@@ -467,7 +468,7 @@ mkdir -p "$STATUS_TARGET"
 STATUS_LOG="$TMP_ROOT/status.log"
 "$PAH" status "$STATUS_TARGET" > "$STATUS_LOG"
 assert_contains "$STATUS_LOG" "harness_version:"
-assert_contains "$STATUS_LOG" "0.3.1"
+assert_contains "$STATUS_LOG" "$HARNESS_VERSION"
 
 OLD_VERSION_ROOT="$TMP_ROOT/old-version-root"
 cp -a "$ROOT" "$OLD_VERSION_ROOT"
