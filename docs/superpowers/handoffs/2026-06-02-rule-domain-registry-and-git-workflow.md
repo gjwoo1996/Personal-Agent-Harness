@@ -8,9 +8,9 @@ default rule domain.
 
 ## Workspace
 
-- Repository: `/home/gjwoo96/gw-personal/Personal-Agent-Harness`
+- Repository: `<PAH_HOME>`
 - Feature worktree:
-  `/home/gjwoo96/gw-personal/Personal-Agent-Harness/.worktrees/rule-domain-registry`
+  `<PAH_HOME>/.worktrees/rule-domain-registry`
 - Feature branch: `feat/rule-domain-registry`
 - Base commit: `7fa76ea`
 - Latest commit before this handoff: `b6d3c15`
@@ -70,7 +70,7 @@ bf574f4 docs: 규칙 도메인 registry 구현 계획 추가
 These commands passed after the implementation and documentation edits:
 
 ```bash
-bash -n bin/pah setup.sh update.sh install.sh tests/test_pah.sh
+bash -n bin/pah setup.sh update.sh tests/test_pah.sh
 bash tests/test_pah.sh
 git diff --check
 ```
@@ -126,7 +126,7 @@ any concrete findings before final completion.
 3. Run fresh final verification:
 
 ```bash
-bash -n bin/pah setup.sh update.sh install.sh tests/test_pah.sh
+bash -n bin/pah setup.sh update.sh tests/test_pah.sh
 bash tests/test_pah.sh
 git diff --check 7fa76ea..HEAD
 ```
@@ -138,7 +138,7 @@ git diff --check 7fa76ea..HEAD
    confirming it is the exact duplicate created during this work:
 
 ```text
-/home/gjwoo96/gw-personal/Personal-Agent-Harness/docs/superpowers/plans/
+<PAH_HOME>/docs/superpowers/plans/
 2026-06-02-rule-domain-registry-and-git-workflow.md
 ```
 

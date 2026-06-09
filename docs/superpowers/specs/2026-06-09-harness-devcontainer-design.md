@@ -11,7 +11,7 @@
 Harness maintainers need a reproducible Linux environment to:
 
 1. Run `npm pack`, `npm publish`, and `npx` smoke tests for the `personal-agent-harness` package
-2. Run `bash tests/test_pah.sh` (bash 4+, `jq`)
+2. Run `bash tests/test_pah.sh` (bash 3.2+, `jq`)
 3. Avoid WSL + Windows npm path conflicts (`/mnt/c/Program Files/nodejs/npm` cannot read WSL `package.json`)
 
 Daily harness work is mostly bash. Node is required only for npm distribution workflows, but that workflow is now a first-class maintainer task.

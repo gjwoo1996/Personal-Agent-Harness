@@ -54,7 +54,6 @@ templates/harness-dev/harness-development.mdc
 .cursor/rules/harness-development.mdc
 setup.sh
 update.sh
-install.sh
 ```
 
 ## Registry Contract
@@ -1083,7 +1082,7 @@ git commit -m "docs: registry 기반 규칙 도메인 확장 절차 반영"
 - [ ] **Step 1: Run shell syntax checks**
 
 ```bash
-bash -n bin/pah setup.sh update.sh install.sh tests/test_pah.sh
+bash -n bin/pah setup.sh update.sh tests/test_pah.sh
 ```
 
 Expected: no output and exit code `0`.

@@ -1,6 +1,15 @@
 # npm Transition Cleanup Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Status: CLOSED (2026-06-09, v0.3.1).** 모든 작업 완료. 아래는 이력 보존용 기록입니다.
+>
+> **최종 결과:**
+> - 사용자용 문서(`troubleshooting`, `how-it-works`, `usage`, `reference`, `README`)를 npm/npx 우선으로 정리, git checkout은 개발·legacy 경로로 명시.
+> - **래퍼 스크립트 정책(Task 4):** 하이브리드로 확정. `setup.sh`·`update.sh`·`bootstrap.sh`는 npm 패키지에 유지(`pah init/update`가 재사용). **`install.sh`는 저장소에서 삭제하고 패키지에서도 제외**(아래 "install.sh 최종 결정" 참고).
+> - `package.json`의 `files` 최종값: `bin/pah`, `bin/pah-entry`, `bootstrap.sh`, `setup.sh`, `update.sh`, `VERSION`, `config/`, `standards/`, `templates/`.
+>
+> **install.sh 최종 결정:** 본문 Task 4의 Option A 예시에는 `install.sh`가 포함 파일로 남아 있으나, 이는 작성 시점 잔재입니다. **최종 상태에서 `install.sh`는 포함하지 않습니다.**
+
+> **For agentic workers (이력):** REQUIRED SUB-SKILL: superpowers:subagent-driven-development 또는 superpowers:executing-plans. Steps use checkbox 구문으로 추적했습니다.
 
 **Goal:** Make the npm/npx installation workflow the clear primary path, remove misleading git-clone-first guidance, and decide whether legacy shell wrappers remain part of the public npm package.
 
@@ -28,7 +37,7 @@
 **Files:**
 - Modify: `docs/troubleshooting.md`
 
-- [ ] **Step 1: Replace default verify and dry-run commands**
+- [x] **Step 1: Replace default verify and dry-run commands**
 
 Change the opening command block from:
 
@@ -44,7 +53,7 @@ npx personal-agent-harness verify .
 npx personal-agent-harness install . --dry-run
 ```
 
-- [ ] **Step 2: Replace manifest repair command**
+- [x] **Step 2: Replace manifest repair command**
 
 Change:
 
@@ -58,7 +67,7 @@ to:
 npx personal-agent-harness@latest update .
 ```
 
-- [ ] **Step 3: Replace nested harness migration command**
+- [x] **Step 3: Replace nested harness migration command**
 
 Change:
 
@@ -72,7 +81,7 @@ to:
 npx personal-agent-harness init . --clean-nested
 ```
 
-- [ ] **Step 4: Replace gitignore component command**
+- [x] **Step 4: Replace gitignore component command**
 
 Change:
 
@@ -86,7 +95,7 @@ to:
 npx personal-agent-harness install . --components gitignore
 ```
 
-- [ ] **Step 5: Replace update status guidance**
+- [x] **Step 5: Replace update status guidance**
 
 Change the "하네스 업데이트 확인" section so it says:
 
@@ -106,7 +115,7 @@ npx personal-agent-harness@latest update .
 ```
 ```
 
-- [ ] **Step 6: Move git checkout troubleshooting into a legacy subsection**
+- [x] **Step 6: Move git checkout troubleshooting into a legacy subsection**
 
 Keep `update.sh`/`git pull --ff-only` guidance, but under:
 
@@ -116,7 +125,7 @@ Keep `update.sh`/`git pull --ff-only` guidance, but under:
 
 Explain that it applies only when the user intentionally cloned PAH outside the target project.
 
-- [ ] **Step 7: Verify docs no longer default to PAH_HOME**
+- [x] **Step 7: Verify docs no longer default to PAH_HOME**
 
 Run:
 
@@ -133,7 +142,7 @@ Expected: only the legacy git checkout subsection contains those terms.
 **Files:**
 - Modify: `docs/how-it-works.md`
 
-- [ ] **Step 1: Replace the copy-mode diagram source**
+- [x] **Step 1: Replace the copy-mode diagram source**
 
 Change the source side from:
 
@@ -168,7 +177,7 @@ target-project/
   .harness/manifest.json
 ```
 
-- [ ] **Step 2: Update source-location wording**
+- [x] **Step 2: Update source-location wording**
 
 Change wording that says the source lives in `PAH_HOME` to:
 
@@ -176,7 +185,7 @@ Change wording that says the source lives in `PAH_HOME` to:
 npm/npx 사용 시 하네스 소스는 npm 캐시 또는 글로벌 설치 위치에 있고, 대상 프로젝트에는 copy mode 산출물만 남습니다. git checkout은 하네스 개발이나 npm 없이 쓰는 legacy 경로입니다.
 ```
 
-- [ ] **Step 3: Update the automatic update caveat**
+- [x] **Step 3: Update the automatic update caveat**
 
 Change:
 
@@ -190,7 +199,7 @@ to:
 새 npm 패키지 버전은 대상 프로젝트에 자동 반영되지 않습니다. `npx personal-agent-harness@latest update .`를 실행해야 합니다.
 ```
 
-- [ ] **Step 4: Replace optional component commands**
+- [x] **Step 4: Replace optional component commands**
 
 Change:
 
@@ -206,7 +215,7 @@ npx personal-agent-harness install . --components rules,devcontainer,gitignore
 npx personal-agent-harness install . --components harness-dev
 ```
 
-- [ ] **Step 5: Replace update flow**
+- [x] **Step 5: Replace update flow**
 
 Replace the git-push/git-pull/update.sh sequence with:
 
@@ -217,7 +226,7 @@ Replace the git-push/git-pull/update.sh sequence with:
 4. 기존 관리 파일은 .harness/backups/<timestamp>/에 백업
 ```
 
-- [ ] **Step 6: Verify old flow is legacy-only**
+- [x] **Step 6: Verify old flow is legacy-only**
 
 Run:
 
@@ -236,7 +245,7 @@ Expected: old terms appear only in a short legacy note, or not at all.
 - Modify: `docs/usage.md`
 - Modify: `docs/reference.md`
 
-- [ ] **Step 1: Keep README npm-first and mark checkout optional**
+- [x] **Step 1: Keep README npm-first and mark checkout optional**
 
 In `README.md`, keep the npm/npx section as primary. Change the `git checkout (하네스 개발·legacy)` heading or paragraph to make it explicit:
 
@@ -250,7 +259,7 @@ and:
 일반 대상 프로젝트에는 이 방식 대신 npm/npx를 사용합니다.
 ```
 
-- [ ] **Step 2: Clarify `docs/usage.md` legacy section**
+- [x] **Step 2: Clarify `docs/usage.md` legacy section**
 
 In `docs/usage.md`, change the legacy checkout intro to:
 
@@ -258,7 +267,7 @@ In `docs/usage.md`, change the legacy checkout intro to:
 이 섹션은 하네스 자체를 수정하거나 npm 없이 써야 할 때만 사용합니다. 일반 대상 프로젝트 적용은 위의 npm/npx 워크플로우를 사용합니다.
 ```
 
-- [ ] **Step 3: Clarify advanced options wording**
+- [x] **Step 3: Clarify advanced options wording**
 
 In `docs/usage.md`, replace:
 
@@ -272,7 +281,7 @@ with:
 기본 `init`과 `update`는 `rules,hooks`를 설치합니다.
 ```
 
-- [ ] **Step 4: Adjust reference entry-point wording**
+- [x] **Step 4: Adjust reference entry-point wording**
 
 In `docs/reference.md`, change:
 
@@ -286,7 +295,7 @@ to:
 git checkout 개발·legacy용: `bootstrap.sh`, `setup.sh`, `update.sh`, `bin/pah`
 ```
 
-- [ ] **Step 5: Verify user-facing docs are npm-first**
+- [x] **Step 5: Verify user-facing docs are npm-first**
 
 Run:
 
@@ -308,15 +317,15 @@ Choose exactly one option before editing.
 
 ## Option A: Keep Wrappers as Supported Legacy Runtime
 
-- [ ] **Step 1: Document why wrappers are shipped**
+- [x] **Step 1: Document why wrappers are shipped**
 
 Add a short note to `docs/reference.md`:
 
 ```markdown
-npm 패키지에는 `setup.sh`, `update.sh`, `bootstrap.sh`, `install.sh`도 포함됩니다. 현재 `pah init/update`가 이 래퍼를 재사용하며, git checkout legacy 경로와 동일한 동작을 유지하기 위해 의도적으로 배포합니다.
+npm 패키지에는 `setup.sh`, `update.sh`, `bootstrap.sh`도 포함됩니다. 현재 `pah init/update`가 이 래퍼를 재사용하며, git checkout legacy 경로와 동일한 동작을 유지하기 위해 의도적으로 배포합니다. (`install.sh`는 최종적으로 제외했습니다.)
 ```
 
-- [ ] **Step 2: Add package-content assertion**
+- [x] **Step 2: Add package-content assertion**
 
 In `tests/test_pah.sh`, keep the existing npm package simulation and add:
 
@@ -324,10 +333,10 @@ In `tests/test_pah.sh`, keep the existing npm package simulation and add:
 assert_file "$NPM_ROOT/setup.sh"
 assert_file "$NPM_ROOT/update.sh"
 assert_file "$NPM_ROOT/bootstrap.sh"
-assert_file "$NPM_ROOT/install.sh"
+# install.sh는 최종적으로 제외 — 포함 단언 없음
 ```
 
-- [ ] **Step 3: Run tests**
+- [x] **Step 3: Run tests**
 
 Run:
 
@@ -339,7 +348,7 @@ Expected: `All pah tests passed`.
 
 ## Option B: Remove Wrapper Runtime Dependency From npm
 
-- [ ] **Step 1: Refactor `cmd_init` in `bin/pah`**
+- [x] **Step 1: Refactor `cmd_init` in `bin/pah`**
 
 Replace:
 
@@ -354,7 +363,7 @@ cmd_install "$target"
 cmd_verify "$target"
 ```
 
-- [ ] **Step 2: Refactor `cmd_update` in `bin/pah`**
+- [x] **Step 2: Refactor `cmd_update` in `bin/pah`**
 
 Replace:
 
@@ -369,7 +378,7 @@ cmd_install "$target"
 cmd_verify "$target"
 ```
 
-- [ ] **Step 3: Remove wrapper scripts from npm files**
+- [x] **Step 3: Remove wrapper scripts from npm files**
 
 In `package.json`, change:
 
@@ -401,7 +410,7 @@ to:
 ]
 ```
 
-- [ ] **Step 4: Update npm package simulation test**
+- [x] **Step 4: Update npm package simulation test**
 
 In `tests/test_pah.sh`, change:
 
@@ -424,11 +433,11 @@ assert_not_file "$NPM_ROOT/bootstrap.sh"
 assert_not_file "$NPM_ROOT/install.sh"
 ```
 
-- [ ] **Step 5: Keep git checkout wrapper tests**
+- [x] **Step 5: Keep git checkout wrapper tests**
 
 Do not remove the earlier tests that copy the full repository and call `setup.sh`, `update.sh`, and `bootstrap.sh`. Those scripts still exist in the repo for development/legacy use.
 
-- [ ] **Step 6: Run tests**
+- [x] **Step 6: Run tests**
 
 Run:
 
@@ -456,7 +465,7 @@ and `npm pack --dry-run` tarball contents do not include `setup.sh`, `update.sh`
 - Review: `docs/superpowers/handoffs/`
 - Do not modify: `secret/`
 
-- [ ] **Step 1: Confirm package excludes planning artifacts**
+- [x] **Step 1: Confirm package excludes planning artifacts**
 
 Run:
 
@@ -466,11 +475,11 @@ npm pack --dry-run
 
 Expected: tarball contents do not include `etc/`, `docs/`, `secret/`, `.devcontainer/`, or `.cursor/`.
 
-- [ ] **Step 2: Decide what to keep in git**
+- [x] **Step 2: Decide what to keep in git**
 
 Keep `etc/05-npm-배포-가이드.md` if it is useful maintainer documentation. Consider deleting or archiving old `docs/superpowers/plans/2026-06-09-external-harness-workflow.md` and matching spec once npm docs are corrected, because they describe the previous external-clone transition rather than the current npm-first state.
 
-- [ ] **Step 3: Verify secrets are ignored**
+- [x] **Step 3: Verify secrets are ignored**
 
 Run:
 
@@ -488,7 +497,7 @@ Expected:
 
 and `git ls-files` prints nothing for both files.
 
-- [ ] **Step 4: Do not commit local-only untracked AI/editor files unless intentionally wanted**
+- [x] **Step 4: Do not commit local-only untracked AI/editor files unless intentionally wanted**
 
 Check:
 
@@ -505,17 +514,17 @@ Expected: review untracked files like `.cursor/rules/skill-usage-announcement.md
 **Files:**
 - Verify only
 
-- [ ] **Step 1: Run shell syntax checks**
+- [x] **Step 1: Run shell syntax checks**
 
 Run:
 
 ```bash
-bash -n bin/pah bin/pah-entry setup.sh update.sh bootstrap.sh install.sh tests/test_pah.sh
+bash -n bin/pah bin/pah-entry setup.sh update.sh bootstrap.sh tests/test_pah.sh
 ```
 
 Expected: no output, exit code 0.
 
-- [ ] **Step 2: Run harness test suite**
+- [x] **Step 2: Run harness test suite**
 
 Run:
 
@@ -529,7 +538,7 @@ Expected:
 All pah tests passed
 ```
 
-- [ ] **Step 3: Inspect npm package contents**
+- [x] **Step 3: Inspect npm package contents**
 
 Run:
 
@@ -539,7 +548,7 @@ npm pack --dry-run
 
 Expected: tarball includes only intended runtime files. If Task 4 Option A was chosen, wrapper scripts are present. If Option B was chosen, wrapper scripts are absent.
 
-- [ ] **Step 4: Check formatting whitespace**
+- [x] **Step 4: Check formatting whitespace**
 
 Run:
 
@@ -549,7 +558,7 @@ git diff --check
 
 Expected: no whitespace errors.
 
-- [ ] **Step 5: Review remaining git clone references**
+- [x] **Step 5: Review remaining git clone references**
 
 Run:
 

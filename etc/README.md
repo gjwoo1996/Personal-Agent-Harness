@@ -23,13 +23,13 @@ Personal-Agent-Harness 워크플로우 개선 작업(2026-06-09~)의 요청·진
 
 ## 현재 브랜치
 
-`feat/external-harness-workflow` (main 미머지)
+`main` — `feat/external-harness-workflow` 작업 머지 완료
 
 ## 한 줄 요약
 
 **문제:** 프로젝트 안에 harness를 clone하면 중첩 git + 불필요한 폴더 발생  
 **해결 방향:** copy mode 유지 + 프로젝트 밖 도구화 → **npm/npx CLI**로 `init`/`update`  
-**남은 일:** 원격 저장소 push
+**상태:** main 머지 완료, npm `0.3.1` 배포 완료
 
 ## 현재 주의점
 

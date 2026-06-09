@@ -40,7 +40,6 @@ Keep unchanged (동작은 이미 target 인자 지원):
 ```text
 setup.sh
 update.sh
-install.sh
 ```
 
 ## Workflow Contract (After Change)
@@ -223,7 +222,7 @@ assert_contains "$SCAFFOLD/.gitignore" "Personal-Agent-Harness/"
 - [ ] **Step 2: Run test to verify it fails**
 
 ```bash
-cd /home/gjwoo96/gw-personal/Personal-Agent-Harness
+cd <PAH_HOME>
 bash tests/test_pah.sh
 ```
 
@@ -570,7 +569,7 @@ Change manual demo (~line 87) from in-project clone to:
 
 ```bash
 mkdir -p /tmp/pah-demo && cd /tmp/pah-demo && git init
-/home/gjwoo96/gw-personal/Personal-Agent-Harness/bootstrap.sh .
+<PAH_HOME>/bootstrap.sh .
 ```
 
 Keep monorepo `harness-dev` section as-is (PAH inside monorepo for harness engineering is a separate case).
@@ -618,17 +617,17 @@ bash tests/test_pah.sh
 
 # 2) Simulated new project
 mkdir -p /tmp/pah-external-demo && cd /tmp/pah-external-demo && git init
-/home/gjwoo96/gw-personal/Personal-Agent-Harness/bootstrap.sh .
+<PAH_HOME>/bootstrap.sh .
 test ! -d Personal-Agent-Harness
-/home/gjwoo96/gw-personal/Personal-Agent-Harness/bin/pah verify .
-/home/gjwoo96/gw-personal/Personal-Agent-Harness/bin/pah status . --harness-root /home/gjwoo96/gw-personal/Personal-Agent-Harness
+<PAH_HOME>/bin/pah verify .
+<PAH_HOME>/bin/pah status . --harness-root <PAH_HOME>
 
 # 3) Simulated migration
 mkdir -p /tmp/pah-nested-demo && cd /tmp/pah-nested-demo && git init
 git clone <local-path-or-skip> ... # or cp -a harness
 # use cp -a for local test:
-cp -a /home/gjwoo96/gw-personal/Personal-Agent-Harness /tmp/pah-nested-demo/Personal-Agent-Harness
-/home/gjwoo96/gw-personal/Personal-Agent-Harness/bootstrap.sh /tmp/pah-nested-demo --clean-nested
+cp -a <PAH_HOME> /tmp/pah-nested-demo/Personal-Agent-Harness
+<PAH_HOME>/bootstrap.sh /tmp/pah-nested-demo --clean-nested
 test ! -d /tmp/pah-nested-demo/Personal-Agent-Harness
 ```
 

@@ -104,7 +104,7 @@ npx personal-agent-harness@0.3.1 init .
 `package.json` `files` 필드 기준:
 
 - `bin/pah`, `bin/pah-entry`
-- `bootstrap.sh`, `setup.sh`, `update.sh`, `install.sh`
+- `bootstrap.sh`, `setup.sh`, `update.sh`
 - `VERSION`, `config/`, `standards/`, `templates/`
 
 ## 보안

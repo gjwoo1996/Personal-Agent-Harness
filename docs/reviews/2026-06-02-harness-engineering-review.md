@@ -1,8 +1,13 @@
 # Personal-Agent-Harness 하네스 엔지니어링 분석 보고서
 
 > **문서 유형:** 사람 참고용 분석 문서. `pah install` 대상이 아닙니다.
-> **작성일:** 2026-06-02
-> **대상 버전:** v0.2.0 (`88f19aa`)
+> **최초 작성일:** 2026-06-02 (v0.2.0, `88f19aa`)
+> **재분석일:** 2026-06-09
+> **대상 버전:** v0.3.1
+>
+> 2026-06-02 분석에서 🔴 Critical로 지적했던 항목 중 **enforcement hooks(2-1)**,
+> **`pah status` 버전 비교(2-2)**, **`pah update` 서브커맨드(2-5)** 는 v0.3.1에서
+> 구현 완료되었습니다. 아래 본문은 v0.3.1 기준으로 갱신했습니다.
 
 ---
 
@@ -80,43 +85,46 @@ HTML 주석 마커(`<!-- pah:<domain>:start/end -->`)를 통한 도메인별 블
 
 ## 2. 개선이 필요한 부분
 
-### 2-1. 🔴 Critical: Enforcement Layer 부재
+### 2-1. ✅ 해소됨 (v0.3.1): Enforcement Layer 추가
 
-**현황**: CLAUDE.md/AGENTS.md 블록은 *advisory* 텍스트입니다. AI가 컨텍스트에 포함해 읽지만 강제력이 없습니다.
+**2026-06-02 현황**: CLAUDE.md/AGENTS.md 블록은 *advisory* 텍스트뿐이라 강제력이 없었습니다.
 
 **2025-2026 업계 관점** (HumanLayer, Claude Code Hooks):
 
 > "CLAUDE.md is text that becomes part of the model's context. A sufficiently confident hallucination, an ambiguous instruction, or a single context-window truncation can override a CLAUDE.md rule. Hooks are deterministic and guarantee the action happens."
 
-현재 PAH는 Anthropic Claude Code hooks 시스템 (PreToolUse, PostToolUse, UserPromptSubmit 등)과 연결되어 있지 않습니다.
+**v0.3.1 상태**: 별도 `hooks` 컴포넌트가 추가되어 Claude Code PreToolUse hook과 연결됩니다.
 
-- 커밋 전에 `git-workflow-standards.md`를 실제로 읽도록 강제하는 hook 없음
-- `.devcontainer/` 파일 수정 시 devcontainer 표준 확인을 강제하는 hook 없음
+- `pah install . --components rules,hooks` (기본 `init`/`update`가 `rules,hooks` 설치)
+- `templates/stubs/hooks/<domain>.hook.sh`를 `.harness/hooks/`로 복사하고 실행 권한 부여
+- `.claude/settings.json`의 `hooks.PreToolUse`에 도메인별 matcher 병합 (`install_hooks_component`)
+- `pah verify`가 hook 스크립트 존재·실행권한·settings.json 등록을 검증 (`verify_hooks_if_installed`)
+- `jq` 부재 시 hooks 설치를 건너뛰고 advisory 모드로 폴백 (경고 출력)
 
-**개선 방향**: `rules` 컴포넌트 외에 별도 `hooks` 컴포넌트를 추가해 `.claude/settings.json` 스텁을 병합하는 방식을 검토할 수 있습니다.
-
-```bash
-# 예시: 향후 pah install . --components rules,hooks
-# → .claude/settings.json에 UserPromptSubmit hook 병합
-```
+**남은 한계**: enforcement는 Claude Code hooks 런타임에 의존하므로, hooks를 지원하지 않는 에이전트에서는 여전히 advisory로 동작합니다.
 
 ---
 
-### 2-2. 🔴 Critical: 버전 드리프트 감지 없음
+### 2-2. ✅ 해소됨 (v0.3.1): 버전 드리프트 감지 추가
 
-**현황**: `pah status`는 `.harness/manifest.json` 존재 여부만 확인합니다. manifest에 `harness_version`이 기록되어 있지만 현재 하네스 버전과의 비교는 없습니다.
+**2026-06-02 현황**: `pah status`는 `.harness/manifest.json` 존재 여부만 확인했습니다.
 
-**결과**: 하네스가 신규 버전으로 업그레이드된 후 프로젝트가 구버전 기준으로 뒤처져도 경고가 없습니다.
+**v0.3.1 상태**: `pah status`가 `harness_version`을 출력하고, `--harness-root`로 비교합니다.
 
-**개선 방향**: `pah status`에 버전 비교 로직 추가.
+- `cmd_status`가 `read_manifest_field`로 manifest의 `harness_version`을 읽어 출력 (`jq` 우선, 없으면 grep/sed 폴백)
+- `pah status <target> --harness-root <path>`로 설치 버전 vs 하네스 `VERSION` 비교
+- 불일치 시 `update available: installed <x>, harness_root <y>`와 업데이트 명령을 안내
 
 ```
-# 개선 후 출력 예시
+# 실제 출력 예시
 Personal-Agent-Harness installed: /path/to/project
-  Installed version: 0.2.0
-  Current harness:   0.5.0
-  WARNING: Run update.sh to upgrade.
+Manifest: .harness/manifest.json
+harness_version: 0.2.0
+harness_root version: 0.3.1
+update available: installed 0.2.0, harness_root 0.3.1
 ```
+
+**남은 한계**: `--harness-root` 없이 호출하면 비교는 생략됩니다. 원격(npm registry) 최신 버전을 직접 조회하는 기능은 범위 밖입니다.
 
 ---
 
@@ -138,9 +146,11 @@ Personal-Agent-Harness installed: /path/to/project
 
 ---
 
-### 2-5. 🟡 Medium: `pah update` 서브커맨드 없음
+### 2-5. ✅ 해소됨 (v0.3.1): `pah update` 서브커맨드 추가
 
-**현황**: `update.sh`는 `git pull --ff-only` + `pah install` + `pah verify`를 실행하는 별도 진입 스크립트입니다. `pah install`, `pah verify`, `pah status`가 있는데 `pah update`만 없어 CLI 인터페이스가 일관적이지 않습니다.
+**2026-06-02 현황**: `pah install`, `pah verify`, `pah status`는 있었으나 `pah update`만 없어 CLI 인터페이스가 일관적이지 않았습니다.
+
+**v0.3.1 상태**: `cmd_update`가 추가되어 `pah update <target>`로 install + verify를 실행합니다 (npm 경로에서는 `PAH_SKIP_PULL=1`로 git pull 생략). `npx personal-agent-harness@latest update .`가 표준 업데이트 경로입니다.
 
 ---
 
@@ -153,7 +163,7 @@ Personal-Agent-Harness installed: /path/to/project
 ```yaml
 # .github/workflows/harness-verify.yml 예시
 - name: Verify harness integrity
-  run: ./Personal-Agent-Harness/bin/pah verify .
+  run: npx personal-agent-harness verify .
 ```
 
 ---
@@ -193,20 +203,30 @@ Personal-Agent-Harness installed: /path/to/project
 | Shell 안전성 | ✅ 우수 | pipefail, atomic write, backslash 보존 |
 | 테스트 커버리지 | ✅ 넓음 | 15+ 시나리오 |
 | Cursor MDC 전략 | ✅ 적절 | glob-triggered / alwaysApply 구분 |
-| Enforcement layer | ❌ 없음 | 가장 큰 갭 — advisory only |
-| 버전 드리프트 감지 | ❌ 없음 | status가 존재만 확인 |
+| Enforcement layer | ✅ 구현 (v0.3.1) | `hooks` 컴포넌트 + Claude Code PreToolUse |
+| 버전 드리프트 감지 | ✅ 구현 (v0.3.1) | `status --harness-root` 비교 |
+| CLI 일관성 | ✅ 구현 (v0.3.1) | `pah update` 서브커맨드 추가 |
 | Block 컨텐츠 무결성 | ⚠️ 부분 | standards 파일만, block 내용 미검증 |
-| CI 통합 | ⚠️ 없음 | verify는 있지만 예시 없음 |
-| CLI 일관성 | ⚠️ 부분 | update.sh가 pah 서브커맨드가 아님 |
+| CI 통합 | ⚠️ 문서만 | npx verify 예시 있음, 자동 실행 템플릿 없음 |
 | 마커 스타일 | ⚠️ 불일치 | gitignore vs agent block |
 
 ---
 
 ## 4. 개선 우선순위
 
+### 완료 (v0.3.1)
+
+| 항목 | 효과 |
+|------|------|
+| Enforcement hooks 컴포넌트 추가 (2-1) | Advisory 한계 근본 해소 |
+| `pah status` 버전 비교 추가 (2-2) | 운영 가시성 향상 |
+| `pah update` 서브커맨드 추가 (2-5) | CLI 일관성 확보 |
+
+### 잔여 (우선순위)
+
 | 순위 | 항목 | 구현 비용 | 효과 |
 |------|------|-----------|------|
-| 1 | Enforcement hooks 컴포넌트 추가 (2-1) | 높음 | Advisory 한계 근본 해소 |
-| 2 | `pah status`에 버전 비교 추가 (2-2) | 낮음 | 운영 가시성 즉시 향상 |
-| 3 | Block 컨텐츠 체크섬 또는 verify 로직 추가 (2-3) | 중간 | 무결성 보장 완성 |
-| 4 | `pah update` 서브커맨드 + CI 예시 문서 (2-5, 2-6) | 낮음 | UX와 운영 패턴 정렬 |
+| 1 | Block 컨텐츠 체크섬 또는 verify 로직 추가 (2-3) | 중간 | 무결성 보장 완성 |
+| 2 | CI 자동 실행 워크플로우 템플릿 (2-6) | 낮음 | 드리프트 자동 감지 운영화 |
+| 3 | gitignore/agent 마커 스타일 통일 (2-4) | 낮음 | 기여자 이해도 향상 |
+| 4 | 설치 파일 버전 메타데이터 (2-9), `pah diff` (2-8), 명시적 chmod (2-7) | 낮음 | 관찰가능성·UX 보강 |
