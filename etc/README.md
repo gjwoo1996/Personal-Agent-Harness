@@ -29,14 +29,14 @@ Personal-Agent-Harness 워크플로우 개선 작업(2026-06-09~)의 요청·진
 
 **문제:** 프로젝트 안에 harness를 clone하면 중첩 git + 불필요한 폴더 발생  
 **해결 방향:** copy mode 유지 + 프로젝트 밖 도구화 → **npm/npx CLI**로 `init`/`update`  
-**남은 일:** `npm publish`, 변경사항 커밋, main 머지
+**남은 일:** npm 로그인 후 `npm publish`, publish 후 npx 스모크 테스트, main 머지
 
 ## 현재 주의점
 
-현재 working tree에는 npm/npx 배포 전환 작업과 별개로 **하네스 저장소 개발용 `.devcontainer/` 작업**도 함께 섞여 있다. 둘 다 npm publish 흐름과 관련은 있지만 변경 성격이 다르므로 커밋·리뷰·롤백 단위를 분리하는 편이 좋다.
+작업 중 npm/npx 배포 전환 작업과 별개로 **하네스 저장소 개발용 `.devcontainer/` 작업**도 함께 있었다. 둘 다 npm publish 흐름과 관련은 있지만 변경 성격이 달라 커밋·리뷰·롤백 단위를 분리했다.
 
-권장 분리:
+분리된 커밋:
 
-1. npm 패키지와 `pah init/update` CLI 변경
-2. 하네스 저장소 자체의 개발용 `.devcontainer/`
-3. 대상 프로젝트에 복사되는 `templates/devcontainer/` 변경
+1. `5b4d85b` — npm 패키지와 `pah init/update` CLI 변경
+2. `184ed50` — 하네스 저장소 자체의 개발용 `.devcontainer/`
+3. `fd8e810` — 대상 프로젝트에 복사되는 `templates/devcontainer/` 변경
