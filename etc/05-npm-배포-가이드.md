@@ -60,7 +60,7 @@ npm whoami
 
 # 2) tarball 검증
 npm pack
-tar -tzf personal-agent-harness-0.3.0.tgz | head -20
+tar -tzf personal-agent-harness-0.3.1.tgz | head -20
 # standards/, bin/pah 포함
 # docs/development.md 미포함 확인
 
@@ -70,7 +70,7 @@ npm publish
 
 # 4) registry 확인
 npm view personal-agent-harness version
-# → 0.3.0
+# → 0.3.1
 ```
 
 ## 사용 (publish 후)
@@ -96,7 +96,7 @@ pah update /path/to/my-project
 ### 버전 고정
 
 ```bash
-npx personal-agent-harness@0.3.0 init .
+npx personal-agent-harness@0.3.1 init .
 ```
 
 ## 패키지에 포함되는 파일
