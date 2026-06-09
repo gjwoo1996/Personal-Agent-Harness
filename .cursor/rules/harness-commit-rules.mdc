@@ -1,0 +1,32 @@
+---
+description: Personal-Agent-Harness 개발 시 커밋 규칙 (하네스 저장소 전용)
+alwaysApply: true
+harness-internal: true
+---
+
+# 하네스 커밋 규칙
+
+이 규칙은 **Personal-Agent-Harness 저장소 자체를 개발할 때만** 적용된다.
+대상(제품) 프로젝트에는 배포되지 않는다.
+
+우선순위: 직접적인 사용자 지시 > 이 규칙 > `git-workflow` 표준.
+
+## 1. 커밋 메시지
+
+- Conventional 접두사(`feat`/`fix`/`docs`/`refactor`/`test`/`chore`/`style`)를 유지한다.
+- 요약과 본문은 **반드시 한글**로 작성한다.
+- 예) `feat: 사용자 설치 스크립트 추가`
+
+## 2. 커밋 분할
+
+- 변경을 성격별로 나눠 여러 커밋으로 작성한다.
+- 서로 독립적인 기능/수정/문서/리팩터/테스트 변경은 분리한다.
+- 모든 수정사항을 하나의 커밋에 몰아넣지 않는다.
+
+## 3. main 브랜치 merge
+
+- `main` 브랜치로의 merge는 사용자의 명시적 동의 없이는 **절대** 하지 않는다.
+
+## 4. push
+
+- push는 사용자가 **명시적으로 요청했을 때만** 실행한다.
