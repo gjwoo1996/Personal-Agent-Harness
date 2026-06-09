@@ -11,7 +11,7 @@ usage() {
 Usage:
   pah install <target> [--dry-run] [--force] [--components rules,devcontainer,gitignore,harness-dev,hooks]
   pah verify <target>
-  pah status <target>
+  pah status <target> [--harness-root <path>]
 USAGE
 }
 
@@ -357,6 +357,7 @@ install_gitignore_block() {
 .env
 .devcontainer/.env
 .harness/backups/
+Personal-Agent-Harness/
 # pah:managed:end
 EOF
 )"
@@ -645,17 +646,75 @@ cmd_verify() {
   log "Personal-Agent-Harness verification passed: $target"
 }
 
+read_manifest_field() {
+  local manifest="$1"
+  local field="$2"
+
+  if jq_available; then
+    jq -r --arg field "$field" '.[$field]' "$manifest"
+    return 0
+  fi
+
+  grep -E "\"$field\":" "$manifest" | head -1 | sed -E 's/.*: "([^"]*)".*/\1/'
+}
+
 cmd_status() {
-  local target="${1:-}"
+  local target=""
+  local harness_root=""
+
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --harness-root)
+        [ $# -ge 2 ] || die "status --harness-root requires a path"
+        harness_root="$2"
+        shift 2
+        ;;
+      *)
+        if [ -z "$target" ]; then
+          target="$1"
+          shift
+        else
+          die "unexpected status argument: $1"
+        fi
+        ;;
+    esac
+  done
+
   [ -n "$target" ] || die "status requires target"
   target="$(cd "$target" && pwd -P)"
   ensure_target "$target"
 
-  if [ -f "$target/.harness/manifest.json" ]; then
-    log "Personal-Agent-Harness installed: $target"
-    log "Manifest: .harness/manifest.json"
-  else
+  local manifest="$target/.harness/manifest.json"
+  if [ ! -f "$manifest" ]; then
     log "Personal-Agent-Harness not installed: $target"
+    return 0
+  fi
+
+  log "Personal-Agent-Harness installed: $target"
+  log "Manifest: .harness/manifest.json"
+
+  local installed_version
+  installed_version="$(read_manifest_field "$manifest" "harness_version")"
+  log "harness_version: $installed_version"
+
+  if [ -d "$target/Personal-Agent-Harness/.git" ]; then
+    log "WARNING: nested harness clone detected at $target/Personal-Agent-Harness"
+    log "WARNING: recommended: external PAH_HOME bootstrap with --clean-nested"
+  fi
+
+  if [ -n "$harness_root" ]; then
+    harness_root="$(cd "$harness_root" && pwd -P)"
+    local remote_version_file="$harness_root/VERSION"
+    [ -f "$remote_version_file" ] || die "harness VERSION file not found: $remote_version_file"
+    local available_version
+    available_version="$(tr -d '\n' < "$remote_version_file")"
+    log "harness_root version: $available_version"
+    if [ "$installed_version" != "$available_version" ]; then
+      log "update available: installed $installed_version, harness_root $available_version"
+      log "update command: $harness_root/update.sh $target"
+    else
+      log "up to date with harness_root"
+    fi
   fi
 }
 

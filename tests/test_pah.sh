@@ -111,7 +111,8 @@ assert_count "$TARGET/AGENTS.md" "<!-- pah:devcontainer:start -->" 1
 assert_count "$TARGET/CLAUDE.md" "<!-- pah:devcontainer:start -->" 1
 assert_count "$TARGET/AGENTS.md" "<!-- pah:git-workflow:start -->" 1
 assert_count "$TARGET/CLAUDE.md" "<!-- pah:git-workflow:start -->" 1
-"$PAH" status "$TARGET" | grep -Fq "Personal-Agent-Harness installed" || fail "status did not report installed"
+"$PAH" status "$TARGET" > "$TMP_ROOT/early-status.log"
+assert_contains "$TMP_ROOT/early-status.log" "Personal-Agent-Harness installed"
 
 SECOND="$TMP_ROOT/existing"
 mkdir -p "$SECOND"
@@ -143,6 +144,7 @@ assert_file "$SCAFFOLD/.devcontainer/commands/initializeCommand.sh"
 assert_file "$SCAFFOLD/.devcontainer/commands/post-create.sh"
 assert_file "$SCAFFOLD/.devcontainer/README.md"
 assert_contains "$SCAFFOLD/.gitignore" "# pah:managed:start"
+assert_contains "$SCAFFOLD/.gitignore" "Personal-Agent-Harness/"
 "$PAH" verify "$SCAFFOLD"
 
 SETUP_PROJECT="$TMP_ROOT/setup-project"
@@ -174,6 +176,30 @@ echo "$GIT_WORKFLOW_UPDATE_MARKER" >> "$SETUP_PROJECT/Personal-Agent-Harness/sta
 )
 assert_contains "$SETUP_PROJECT/docs/git-workflow/git-workflow-standards.md" "$GIT_WORKFLOW_UPDATE_MARKER"
 "$PAH" verify "$SETUP_PROJECT"
+
+EXTERNAL_PROJECT="$TMP_ROOT/external-project"
+mkdir -p "$EXTERNAL_PROJECT"
+"$ROOT/bootstrap.sh" "$EXTERNAL_PROJECT"
+assert_file "$EXTERNAL_PROJECT/docs/devcontainer/devcontainer-standards.md"
+assert_file "$EXTERNAL_PROJECT/.harness/manifest.json"
+assert_not_dir "$EXTERNAL_PROJECT/Personal-Agent-Harness"
+"$PAH" verify "$EXTERNAL_PROJECT"
+
+NESTED_PROJECT="$TMP_ROOT/nested-project"
+mkdir -p "$NESTED_PROJECT"
+cp -a "$ROOT" "$NESTED_PROJECT/Personal-Agent-Harness"
+"$ROOT/bootstrap.sh" "$NESTED_PROJECT" --clean-nested
+assert_not_dir "$NESTED_PROJECT/Personal-Agent-Harness"
+assert_file "$NESTED_PROJECT/.harness/manifest.json"
+"$PAH" verify "$NESTED_PROJECT"
+
+EXTERNAL_HARNESS="$TMP_ROOT/external-harness-root"
+cp -a "$ROOT" "$EXTERNAL_HARNESS"
+EXTERNAL_UPDATE_MARKER="pah-external-update-marker-$$"
+echo "$EXTERNAL_UPDATE_MARKER" >> "$EXTERNAL_HARNESS/standards/devcontainer/devcontainer-standards.md"
+PAH_SKIP_PULL=1 "$EXTERNAL_HARNESS/update.sh" "$EXTERNAL_PROJECT"
+assert_contains "$EXTERNAL_PROJECT/docs/devcontainer/devcontainer-standards.md" "$EXTERNAL_UPDATE_MARKER"
+"$PAH" verify "$EXTERNAL_PROJECT"
 
 HARNESS_DEV="$TMP_ROOT/harness-dev"
 mkdir -p "$HARNESS_DEV"
@@ -366,5 +392,22 @@ else
   assert_contains "$TMP_ROOT/hooks-dry-run.log" "git-workflow.hook.sh"
   assert_not_file "$HOOKS_DRYRUN_TARGET/.harness/hooks/git-workflow.hook.sh"
 fi
+
+STATUS_TARGET="$TMP_ROOT/status-target"
+mkdir -p "$STATUS_TARGET"
+"$PAH" install "$STATUS_TARGET"
+
+STATUS_LOG="$TMP_ROOT/status.log"
+"$PAH" status "$STATUS_TARGET" > "$STATUS_LOG"
+assert_contains "$STATUS_LOG" "harness_version:"
+assert_contains "$STATUS_LOG" "0.3.0"
+
+OLD_VERSION_ROOT="$TMP_ROOT/old-version-root"
+cp -a "$ROOT" "$OLD_VERSION_ROOT"
+printf '0.1.0\n' > "$OLD_VERSION_ROOT/VERSION"
+
+STATUS_COMPARE_LOG="$TMP_ROOT/status-compare.log"
+"$PAH" status "$STATUS_TARGET" --harness-root "$OLD_VERSION_ROOT" > "$STATUS_COMPARE_LOG"
+assert_contains "$STATUS_COMPARE_LOG" "update available"
 
 echo "All pah tests passed"
