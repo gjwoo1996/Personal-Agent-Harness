@@ -29,7 +29,7 @@ Personal-Agent-Harness 워크플로우 개선 작업(2026-06-09~)의 요청·진
 
 **문제:** 프로젝트 안에 harness를 clone하면 중첩 git + 불필요한 폴더 발생  
 **해결 방향:** copy mode 유지 + 프로젝트 밖 도구화 → **npm/npx CLI**로 `init`/`update`  
-**남은 일:** main 머지
+**남은 일:** 원격 저장소 push
 
 ## 현재 주의점
 
