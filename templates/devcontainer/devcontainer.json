@@ -5,7 +5,7 @@
   "workspaceFolder": "/home/vscode/${localWorkspaceFolderBasename}",
   "remoteUser": "vscode",
   "updateRemoteUserUID": true,
-  "initializeCommand": ".devcontainer/commands/initializeCommand.sh",
+  "initializeCommand": "bash .devcontainer/commands/initializeCommand.sh ${localWorkspaceFolder} ${containerWorkspaceFolder} ${localWorkspaceFolderBasename} ${containerWorkspaceFolderBasename}",
   "postCreateCommand": ".devcontainer/commands/post-create.sh",
   "features": {},
   "customizations": {

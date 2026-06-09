@@ -2,9 +2,12 @@
 # image installs npm-distributed AI CLIs. Projects may switch back to
 # base:ubuntu + features when their AI CLI install path does not require npm
 # during Dockerfile build.
-FROM mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm
+FROM mcr.microsoft.com/devcontainers/javascript-node:24-bookworm
 
 USER root
+RUN usermod -l vscode -d /home/vscode -m node \
+    && groupmod -n vscode node \
+    && find /etc/sudoers.d -type f -exec sed -i 's/\bnode\b/vscode/g' {} + 2>/dev/null || true
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates curl jq \
