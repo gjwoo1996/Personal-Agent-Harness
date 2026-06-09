@@ -29,8 +29,7 @@
 |----------|------|
 | [../setup.sh](../setup.sh) | 대상 프로젝트 첫 적용 |
 | [../update.sh](../update.sh) | 하네스 갱신 반영 |
-| [../install.sh](../install.sh) | `pah install` 래퍼 |
-| [../bin/pah](../bin/pah) | 저수준 CLI |
+| [../bin/pah](../bin/pah) | 저수준 CLI (`install`/`init`/`update`/`verify`/`status`) |
 
 ## 규칙 도메인 원본
 

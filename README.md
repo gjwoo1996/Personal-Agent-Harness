@@ -10,7 +10,6 @@
 |------|-----------|------|
 | Node.js 24 LTS | **권장** | `npx`로 CLI 실행 (최소 22) |
 | bash 3.2+ | 필수 | CLI 실행 |
-| git | git checkout 개발 시 | npm 배포 사용 시 불필요 |
 | jq | **권장** | enforcement hooks 설치 — 없으면 advisory 모드로 동작 |
 | Claude Code | 권장 | `.claude/settings.json` hooks 실행 |
 
@@ -49,26 +48,7 @@ pah init /path/to/my-project
 pah update /path/to/my-project
 ```
 
-## git checkout (선택: 하네스 개발·npm 없이 사용)
-
-하네스를 수정하거나 npm 없이 쓸 때:
-
-```bash
-git clone https://github.com/gjwoo1996/Personal-Agent-Harness.git ~/.local/share/personal-agent-harness
-~/.local/share/personal-agent-harness/bootstrap.sh /path/to/my-project
-```
-
-일반 대상 프로젝트에는 이 방식 대신 npm/npx를 사용합니다.
-
 자세한 내용은 [docs/usage.md](docs/usage.md)를 참고하세요.
-
-## npm publish (메인테이너)
-
-```bash
-npm login
-npm pack
-npm publish
-```
 
 ## 문서
 
@@ -79,4 +59,5 @@ npm publish
 | [docs/how-it-works.md](docs/how-it-works.md) | copy mode, managed block, 규칙 우선순위 |
 | [docs/reference.md](docs/reference.md) | `pah` CLI 레퍼런스, 설치 결과, verify 항목 |
 | [docs/troubleshooting.md](docs/troubleshooting.md) | 문제 해결, 백업 복구 |
-| [docs/development.md](docs/development.md) | 하네스 개발·테스트 |
+
+하네스 개발·배포(git checkout, npm publish 포함)는 [docs/development.md](docs/development.md)를 참고하세요.

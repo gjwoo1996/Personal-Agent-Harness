@@ -86,8 +86,8 @@ bash tests/test_pah.sh
 
 ```bash
 mkdir -p /tmp/pah-demo && cd /tmp/pah-demo && git init
-/home/gjwoo96/gw-personal/Personal-Agent-Harness/bin/pah init .
-/home/gjwoo96/gw-personal/Personal-Agent-Harness/bin/pah update .
+<PAH_HOME>/bin/pah init .
+<PAH_HOME>/bin/pah update .
 ```
 
 ## Dev container (권장)

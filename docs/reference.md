@@ -14,7 +14,7 @@
 
 git checkout 개발·legacy용: `bootstrap.sh`, `setup.sh`, `update.sh`, `bin/pah`
 
-npm 패키지에는 `setup.sh`, `update.sh`, `bootstrap.sh`, `install.sh`도 포함됩니다. 현재 `pah init/update`가 이 래퍼를 재사용하며, git checkout legacy 경로와 동일한 동작을 유지하기 위해 의도적으로 배포합니다.
+npm 패키지에는 `setup.sh`, `update.sh`, `bootstrap.sh`도 포함됩니다. 현재 `pah init/update`가 이 래퍼를 재사용하며, git checkout legacy 경로와 동일한 동작을 유지하기 위해 의도적으로 배포합니다. `pah install`은 직접 호출하므로 별도 래퍼는 두지 않습니다.
 
 ## 기본 `rules` 설치 결과
 

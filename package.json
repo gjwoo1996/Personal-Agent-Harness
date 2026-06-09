@@ -16,7 +16,6 @@
     "bootstrap.sh",
     "setup.sh",
     "update.sh",
-    "install.sh",
     "VERSION",
     "config/",
     "standards/",
