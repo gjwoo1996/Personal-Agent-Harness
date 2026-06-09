@@ -85,7 +85,7 @@ bash tests/test_pah.sh
 3. 임시 프로젝트에서 수동 시나리오 확인:
 
 ```bash
-mkdir -p /tmp/pah-demo && cd /tmp/pah-demo
-git clone <repo-url> Personal-Agent-Harness && ./Personal-Agent-Harness/setup.sh
-./Personal-Agent-Harness/update.sh
+mkdir -p /tmp/pah-demo && cd /tmp/pah-demo && git init
+/home/gjwoo96/gw-personal/Personal-Agent-Harness/bootstrap.sh .
+/home/gjwoo96/gw-personal/Personal-Agent-Harness/update.sh .
 ```

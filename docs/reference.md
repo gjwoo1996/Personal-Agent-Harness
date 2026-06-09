@@ -6,10 +6,13 @@
 
 | 스크립트 | 용도 |
 |----------|------|
+| `bootstrap.sh` | 권장 첫 적용: `setup.sh` + 안내 메시지 |
 | `setup.sh` | 첫 적용: `install` + `verify` |
 | `update.sh` | 갱신: `git pull --ff-only` + `install` + `verify` |
 | `install.sh` | `pah install` 래퍼 |
 | `bin/pah` | 저수준 CLI |
+
+경로 예시는 PAH_HOME `~/.local/share/personal-agent-harness`를 사용합니다.
 
 ## 기본 `rules` 설치 결과
 
@@ -35,7 +38,7 @@ target-project/
 ## `pah install`
 
 ```bash
-./Personal-Agent-Harness/bin/pah install <target> [--dry-run] [--force] [--components rules,devcontainer,gitignore,harness-dev]
+~/.local/share/personal-agent-harness/bin/pah install <target> [--dry-run] [--force] [--components rules,devcontainer,gitignore,harness-dev]
 ```
 
 | 옵션 | 설명 |
@@ -55,22 +58,22 @@ target-project/
 
 ```bash
 # 변경 미리보기
-./Personal-Agent-Harness/bin/pah install . --dry-run
+~/.local/share/personal-agent-harness/bin/pah install . --dry-run
 
 # devcontainer 스캐폴드와 gitignore까지 설치
-./Personal-Agent-Harness/bin/pah install . --components rules,devcontainer,gitignore
+~/.local/share/personal-agent-harness/bin/pah install . --components rules,devcontainer,gitignore
 
 # 관리 파일 강제 갱신
-./Personal-Agent-Harness/bin/pah install . --force
+~/.local/share/personal-agent-harness/bin/pah install . --force
 
 # monorepo 부모에 하네스 개발 rule 설치
-./Personal-Agent-Harness/bin/pah install . --components harness-dev
+~/.local/share/personal-agent-harness/bin/pah install . --components harness-dev
 ```
 
 ## `pah verify`
 
 ```bash
-./Personal-Agent-Harness/bin/pah verify <target>
+~/.local/share/personal-agent-harness/bin/pah verify <target>
 ```
 
 registry 순서대로 다음을 확인합니다.
@@ -111,10 +114,17 @@ registry 순서대로 다음을 확인합니다.
 ## `pah status`
 
 ```bash
-./Personal-Agent-Harness/bin/pah status <target>
+~/.local/share/personal-agent-harness/bin/pah status <target> [--harness-root <path>]
 ```
 
-`.harness/manifest.json` 존재 여부로 하네스 적용 상태를 표시합니다.
+`.harness/manifest.json` 존재 여부와 `harness_version`을 표시합니다.
+
+`--harness-root`를 지정하면 PAH_HOME의 `VERSION` 파일과 비교해 업데이트 가능 여부를 표시합니다.
+
+```bash
+~/.local/share/personal-agent-harness/bin/pah status . \
+  --harness-root ~/.local/share/personal-agent-harness
+```
 
 ## 현재 제한사항
 

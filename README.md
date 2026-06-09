@@ -19,19 +19,22 @@
 
 ## 사용법
 
-대상 **프로젝트 루트**에서 실행합니다.
+하네스 소스는 프로젝트 밖 `PAH_HOME`(기본 `~/.local/share/personal-agent-harness`)에 한 번만 clone합니다. 대상 프로젝트에는 복사된 규칙만 남습니다.
 
 ### 첫 적용
 
 ```bash
-git clone <your-repo-url> Personal-Agent-Harness && ./Personal-Agent-Harness/setup.sh
+git clone <your-repo-url> ~/.local/share/personal-agent-harness
+~/.local/share/personal-agent-harness/bootstrap.sh /path/to/my-project
 ```
 
 ### 업데이트
 
 ```bash
-./Personal-Agent-Harness/update.sh
+~/.local/share/personal-agent-harness/update.sh /path/to/my-project
 ```
+
+> **Legacy:** 예전처럼 프로젝트 안에 clone하는 방법은 [docs/usage.md#legacy-in-project-clone](docs/usage.md#legacy-in-project-clone)을 참고하세요.
 
 ## 문서
 

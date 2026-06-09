@@ -7,12 +7,12 @@
 하네스 저장소가 원본이며 대상 프로젝트는 관리되는 복사본을 받습니다.
 
 ```text
-Personal-Agent-Harness/
+PAH_HOME/  (예: ~/.local/share/personal-agent-harness)
   config/rule-domains.txt
   standards/<domain>/
   templates/stubs/
         |
-        | setup.sh 또는 update.sh
+        | bootstrap.sh / setup.sh / update.sh <target>
         v
 target-project/
   docs/<domain>/
@@ -21,6 +21,8 @@ target-project/
   CLAUDE.md
   .harness/manifest.json
 ```
+
+하네스 소스는 PAH_HOME(프로젝트 밖)에 둡니다. 대상 프로젝트는 copy mode 산출물만 유지합니다.
 
 기본 `rules` 설치에는 `devcontainer`, `git-workflow` 도메인이 포함됩니다.
 
@@ -94,18 +96,25 @@ devcontainer 예외는 `.devcontainer/README.md`, git-workflow 예외는 `docs/g
 optional devcontainer 스캐폴드, `.gitignore` managed block, monorepo용 `harness-dev` rule은 registry 밖에서 별도로 유지됩니다.
 
 ```bash
-./Personal-Agent-Harness/bin/pah install . --components rules,devcontainer,gitignore
-./Personal-Agent-Harness/bin/pah install . --components harness-dev
+~/.local/share/personal-agent-harness/bin/pah install . --components rules,devcontainer,gitignore
+~/.local/share/personal-agent-harness/bin/pah install . --components harness-dev
 ```
 
 ## 업데이트
 
 ```text
+PAH_HOME/.git  --bootstrap/update-->  target-project/.harness/manifest.json
+                                      target-project/docs/...
+```
+
+```text
 1. 하네스 저장소에 변경 push
-2. 대상 프로젝트에서 ./Personal-Agent-Harness/update.sh 실행
-3. git pull --ff-only → install → verify
+2. PAH_HOME에서 git pull --ff-only (update.sh가 수행)
+3. update.sh <target> → install → verify
 4. 기존 관리 파일은 .harness/backups/<timestamp>/에 백업
 ```
+
+프로젝트 안 in-project clone은 legacy입니다. `bootstrap.sh --clean-nested`로 마이그레이션합니다.
 
 ## 아직 하지 않는 일
 

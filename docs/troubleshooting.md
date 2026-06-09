@@ -5,8 +5,8 @@
 먼저 verify와 dry-run을 실행합니다.
 
 ```bash
-./Personal-Agent-Harness/bin/pah verify .
-./Personal-Agent-Harness/bin/pah install . --dry-run
+~/.local/share/personal-agent-harness/bin/pah verify .
+~/.local/share/personal-agent-harness/bin/pah install . --dry-run
 ```
 
 갱신 전 파일은 `.harness/backups/<timestamp>/`에서 확인할 수 있습니다.
@@ -42,8 +42,33 @@ AI stub은 `docs/<domain>/<domain>-standards.md`만 규칙 출처로 참조해�
 `verify`는 현재 설치 파일에서 canonical manifest를 다시 생성해 `.harness/manifest.json`과 비교합니다. checksum, 도메인 순서, 관리 파일 목록이 다르면 install 또는 update를 다시 실행합니다.
 
 ```bash
-./Personal-Agent-Harness/update.sh
+~/.local/share/personal-agent-harness/update.sh .
 ```
+
+## Nested harness / 중첩 git 저장소
+
+프로젝트 안에 `Personal-Agent-Harness/.git`이 있으면 중첩 git 저장소가 생깁니다.
+
+```bash
+~/.local/share/personal-agent-harness/bootstrap.sh . --clean-nested
+```
+
+또는 `gitignore` 컴포넌트로 `Personal-Agent-Harness/`를 무시합니다.
+
+```bash
+~/.local/share/personal-agent-harness/bin/pah install . --components gitignore
+```
+
+## 하네스 업데이트 확인
+
+설치된 버전과 PAH_HOME 버전을 비교합니다.
+
+```bash
+~/.local/share/personal-agent-harness/bin/pah status . \
+  --harness-root ~/.local/share/personal-agent-harness
+```
+
+`update available`이 표시되면 `update.sh`를 실행합니다.
 
 ## `update.sh`의 `git pull` 실패
 
@@ -54,5 +79,5 @@ AI stub은 `docs/<domain>/<domain>-standards.md`만 규칙 출처로 참조해�
 스캐폴드는 기본 `rules` 설치와 별도입니다.
 
 ```bash
-./Personal-Agent-Harness/bin/pah install . --components rules,devcontainer,gitignore
+~/.local/share/personal-agent-harness/bin/pah install . --components rules,devcontainer,gitignore
 ```
