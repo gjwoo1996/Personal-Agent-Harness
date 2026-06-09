@@ -10,6 +10,10 @@ if command -v node >/dev/null 2>&1; then
   node --version
 fi
 
+if command -v gh >/dev/null 2>&1; then
+  gh --version
+fi
+
 if command -v claude >/dev/null 2>&1; then
   claude --version
 fi

@@ -13,6 +13,7 @@ Authoritative standard: `standards/devcontainer/devcontainer-standards.md`
 | Harness tests | `bash tests/test_pah.sh` |
 | npm tarball check | `npm pack` |
 | npm publish | `npm login` then `npm publish` |
+| GitHub (PR, issues) | `gh auth login` then `gh pr create`, etc. |
 | Manual demo | `bin/pah init /tmp/pah-demo` |
 
 Solves WSL + Windows npm path conflicts by providing Linux npm inside the container.
@@ -36,6 +37,17 @@ Use **Reopen in Container** from the command palette.
 1. `initializeCommand.sh` writes `.devcontainer/.env` with workspace paths and pinned AI CLI versions.
 2. Rebuild the container if you change AI CLI versions in `.env`.
 3. Run `npm login` inside the container before the first `npm publish`.
+
+## GitHub CLI
+
+Installed via devcontainer feature `ghcr.io/devcontainers/features/github-cli:1` (pinned in `devcontainer.json`).
+
+Authenticate once per volume:
+
+```bash
+gh auth login
+gh auth status
+```
 
 ## AI CLI versions
 
@@ -138,6 +150,7 @@ bash .devcontainer/commands/initializeCommand.sh
 docker compose -f .devcontainer/docker-compose.dev.yml config
 whoami                    # vscode
 node --version            # v24.x
+gh --version              # 2.93.0
 claude plugin list | grep superpowers
 codex plugin list | grep superpowers
 bash tests/test_pah.sh
