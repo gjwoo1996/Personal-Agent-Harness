@@ -4,15 +4,15 @@
 
 ## 진입점
 
-| 스크립트 | 용도 |
-|----------|------|
-| `bootstrap.sh` | 권장 첫 적용: `setup.sh` + 안내 메시지 |
-| `setup.sh` | 첫 적용: `install` + `verify` |
-| `update.sh` | 갱신: `git pull --ff-only` + `install` + `verify` |
-| `install.sh` | `pah install` 래퍼 |
-| `bin/pah` | 저수준 CLI |
+| 명령 | 용도 |
+|------|------|
+| `npx personal-agent-harness init <target>` | 권장 첫 적용: `install` + `verify` |
+| `npx personal-agent-harness update <target>` | 갱신: `install` + `verify` |
+| `npx personal-agent-harness verify <target>` | 설치 상태 검증 |
+| `npx personal-agent-harness status <target>` | 설치 버전·업데이트 여부 |
+| `pah` | 글로벌 설치 시 bin (`npm install -g personal-agent-harness`) |
 
-경로 예시는 PAH_HOME `~/.local/share/personal-agent-harness`를 사용합니다.
+git checkout 개발용: `bootstrap.sh`, `setup.sh`, `update.sh`, `bin/pah`
 
 ## 기본 `rules` 설치 결과
 
@@ -38,7 +38,9 @@ target-project/
 ## `pah install`
 
 ```bash
-~/.local/share/personal-agent-harness/bin/pah install <target> [--dry-run] [--force] [--components rules,devcontainer,gitignore,harness-dev]
+pah install <target> [--dry-run] [--force] [--components rules,devcontainer,gitignore,harness-dev]
+pah init <target> [--clean-nested]
+pah update <target>
 ```
 
 | 옵션 | 설명 |
@@ -58,22 +60,25 @@ target-project/
 
 ```bash
 # 변경 미리보기
-~/.local/share/personal-agent-harness/bin/pah install . --dry-run
+pah install . --dry-run
 
 # devcontainer 스캐폴드와 gitignore까지 설치
-~/.local/share/personal-agent-harness/bin/pah install . --components rules,devcontainer,gitignore
+pah install . --components rules,devcontainer,gitignore
 
 # 관리 파일 강제 갱신
-~/.local/share/personal-agent-harness/bin/pah install . --force
+pah install . --force
 
 # monorepo 부모에 하네스 개발 rule 설치
-~/.local/share/personal-agent-harness/bin/pah install . --components harness-dev
+pah install . --components harness-dev
+
+# 중첩 clone 제거 후 재설치
+pah init . --clean-nested
 ```
 
 ## `pah verify`
 
 ```bash
-~/.local/share/personal-agent-harness/bin/pah verify <target>
+pah verify <target>
 ```
 
 registry 순서대로 다음을 확인합니다.
@@ -114,16 +119,14 @@ registry 순서대로 다음을 확인합니다.
 ## `pah status`
 
 ```bash
-~/.local/share/personal-agent-harness/bin/pah status <target> [--harness-root <path>]
+pah status <target> [--harness-root <path>]
 ```
 
-`.harness/manifest.json` 존재 여부와 `harness_version`을 표시합니다.
-
-`--harness-root`를 지정하면 PAH_HOME의 `VERSION` 파일과 비교해 업데이트 가능 여부를 표시합니다.
+`.harness/manifest.json`의 `harness_version`과 CLI `VERSION`을 비교합니다.
 
 ```bash
-~/.local/share/personal-agent-harness/bin/pah status . \
-  --harness-root ~/.local/share/personal-agent-harness
+pah status .
+# update available 시: npx personal-agent-harness@latest update .
 ```
 
 ## 현재 제한사항

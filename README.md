@@ -8,8 +8,9 @@
 
 | 항목 | 필수 여부 | 용도 |
 |------|-----------|------|
+| Node.js 24 LTS | **권장** | `npx`로 CLI 실행 (최소 22) |
 | bash 4+ | 필수 | CLI 실행 |
-| git | 필수 | `update.sh` pull, 대상 프로젝트 관리 |
+| git | git checkout 개발 시 | npm 배포 사용 시 불필요 |
 | jq | **권장** | enforcement hooks 설치 — 없으면 advisory 모드로 동작 |
 | Claude Code | 권장 | `.claude/settings.json` hooks 실행 |
 
@@ -17,24 +18,55 @@
 >
 > **jq 설치:** `brew install jq` (macOS) / `apt-get install jq` (Ubuntu/Debian)
 
-## 사용법
+## 사용법 (npm/npx — 권장)
 
-하네스 소스는 프로젝트 밖 `PAH_HOME`(기본 `~/.local/share/personal-agent-harness`)에 한 번만 clone합니다. 대상 프로젝트에는 복사된 규칙만 남습니다.
+대상 **프로젝트 루트**에서 실행합니다. 프로젝트 안에 harness 저장소가 생기지 않습니다.
 
 ### 첫 적용
 
 ```bash
-git clone <your-repo-url> ~/.local/share/personal-agent-harness
-~/.local/share/personal-agent-harness/bootstrap.sh /path/to/my-project
+npx personal-agent-harness init .
 ```
 
 ### 업데이트
 
 ```bash
-~/.local/share/personal-agent-harness/update.sh /path/to/my-project
+npx personal-agent-harness@latest update .
 ```
 
-> **Legacy:** 예전처럼 프로젝트 안에 clone하는 방법은 [docs/usage.md#legacy-in-project-clone](docs/usage.md#legacy-in-project-clone)을 참고하세요.
+### 검증·상태
+
+```bash
+npx personal-agent-harness verify .
+npx personal-agent-harness status .
+```
+
+### 자주 쓰는 경우 (글로벌 설치)
+
+```bash
+npm install -g personal-agent-harness
+pah init /path/to/my-project
+pah update /path/to/my-project
+```
+
+## git checkout (하네스 개발·legacy)
+
+하네스를 수정하거나 npm 없이 쓸 때:
+
+```bash
+git clone https://github.com/gjwoo1996/Personal-Agent-Harness.git ~/.local/share/personal-agent-harness
+~/.local/share/personal-agent-harness/bootstrap.sh /path/to/my-project
+```
+
+자세한 내용은 [docs/usage.md](docs/usage.md)를 참고하세요.
+
+## npm publish (메인테이너)
+
+```bash
+npm login
+npm pack
+npm publish
+```
 
 ## 문서
 

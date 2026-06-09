@@ -9,6 +9,8 @@ RULE_DOMAINS=()
 usage() {
   cat <<'USAGE'
 Usage:
+  pah init <target> [--clean-nested]
+  pah update <target>
   pah install <target> [--dry-run] [--force] [--components rules,devcontainer,gitignore,harness-dev,hooks]
   pah verify <target>
   pah status <target> [--harness-root <path>]
@@ -646,6 +648,68 @@ cmd_verify() {
   log "Personal-Agent-Harness verification passed: $target"
 }
 
+warn_nested_harness() {
+  local target="$1"
+  if [ -d "$target/Personal-Agent-Harness/.git" ]; then
+    log "WARNING: nested harness clone detected at $target/Personal-Agent-Harness"
+    log "WARNING: recommended: pah init $target --clean-nested"
+  fi
+}
+
+update_command_hint() {
+  local target="$1"
+  if [ "${PAH_DISTRIBUTION:-}" = "npm" ]; then
+    log "update command: npx personal-agent-harness@latest update $target"
+  else
+    log "update command: $ROOT/update.sh $target"
+  fi
+}
+
+cmd_init() {
+  local target=""
+  local clean_nested=0
+
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --clean-nested) clean_nested=1; shift ;;
+      -h|--help|help) usage; exit 0 ;;
+      *)
+        if [ -z "$target" ]; then
+          target="$1"
+          shift
+        else
+          die "unexpected init argument: $1"
+        fi
+        ;;
+    esac
+  done
+
+  [ -n "$target" ] || target="."
+  target="$(cd "$target" && pwd -P)"
+  ensure_target "$target"
+
+  warn_nested_harness "$target"
+  "$ROOT/setup.sh" "$target"
+
+  if [ "$clean_nested" = "1" ] && [ -d "$target/Personal-Agent-Harness" ]; then
+    rm -rf "$target/Personal-Agent-Harness"
+    log "Removed nested harness folder: $target/Personal-Agent-Harness"
+  fi
+
+  log "Harness rules installed into: $target"
+  update_command_hint "$target"
+}
+
+cmd_update() {
+  local target="${1:-.}"
+  [ $# -le 1 ] || die "update accepts only an optional target path"
+  target="$(cd "$target" && pwd -P)"
+  ensure_target "$target"
+
+  PAH_SKIP_PULL=1 "$ROOT/update.sh" "$target"
+  update_command_hint "$target"
+}
+
 read_manifest_field() {
   local manifest="$1"
   local field="$2"
@@ -697,24 +761,26 @@ cmd_status() {
   installed_version="$(read_manifest_field "$manifest" "harness_version")"
   log "harness_version: $installed_version"
 
-  if [ -d "$target/Personal-Agent-Harness/.git" ]; then
-    log "WARNING: nested harness clone detected at $target/Personal-Agent-Harness"
-    log "WARNING: recommended: external PAH_HOME bootstrap with --clean-nested"
-  fi
+  warn_nested_harness "$target"
 
-  if [ -n "$harness_root" ]; then
-    harness_root="$(cd "$harness_root" && pwd -P)"
-    local remote_version_file="$harness_root/VERSION"
-    [ -f "$remote_version_file" ] || die "harness VERSION file not found: $remote_version_file"
-    local available_version
-    available_version="$(tr -d '\n' < "$remote_version_file")"
-    log "harness_root version: $available_version"
-    if [ "$installed_version" != "$available_version" ]; then
-      log "update available: installed $installed_version, harness_root $available_version"
-      log "update command: $harness_root/update.sh $target"
+  local compare_root="${harness_root:-$ROOT}"
+  compare_root="$(cd "$compare_root" && pwd -P)"
+  local remote_version_file="$compare_root/VERSION"
+  [ -f "$remote_version_file" ] || die "harness VERSION file not found: $remote_version_file"
+  local available_version
+  available_version="$(tr -d '\n' < "$remote_version_file")"
+  log "cli version: $available_version"
+  if [ "$installed_version" != "$available_version" ]; then
+    log "update available: installed $installed_version, cli $available_version"
+    if [ "${PAH_DISTRIBUTION:-}" = "npm" ]; then
+      log "update command: npx personal-agent-harness@latest update $target"
+    elif [ -n "$harness_root" ]; then
+      log "update command: $compare_root/update.sh $target"
     else
-      log "up to date with harness_root"
+      log "update command: $ROOT/update.sh $target"
     fi
+  else
+    log "up to date with cli"
   fi
 }
 
@@ -724,6 +790,8 @@ main() {
   shift || true
 
   case "$command" in
+    init) cmd_init "$@" ;;
+    update) cmd_update "$@" ;;
     install) cmd_install "$@" ;;
     verify) cmd_verify "$@" ;;
     status) cmd_status "$@" ;;

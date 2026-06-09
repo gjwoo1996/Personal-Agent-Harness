@@ -12,41 +12,53 @@
 
 ## 준비물
 
+- Node.js 24 LTS 권장, 최소 22 (`npx` 실행)
 - Linux 또는 WSL에서 실행되는 Bash
 - 하네스를 적용할 대상 프로젝트 디렉터리
 
 대상 프로젝트가 git 저장소일 필요는 없지만, 생성된 파일을 검토하기 쉽도록 git 저장소 사용을 권장합니다.
 
-## 권장 워크플로우 (외부 PAH_HOME)
-
-WSL·Linux에서 하네스는 프로젝트 밖 고정 경로에 두고, 여러 프로젝트에서 재사용합니다.
+## 권장 워크플로우 (npm/npx)
 
 ```bash
-# 1) 하네스 — 한 번만 clone
-git clone <your-repo-url> ~/.local/share/personal-agent-harness
+# 1) 대상 프로젝트에 적용
+npx personal-agent-harness init .
 
-# 2) 대상 프로젝트에 적용
-~/.local/share/personal-agent-harness/bootstrap.sh /path/to/my-project
+# 2) 업데이트
+npx personal-agent-harness@latest update .
 
-# 3) 업데이트
-~/.local/share/personal-agent-harness/update.sh /path/to/my-project
-
-# 4) 설치 버전 확인
-~/.local/share/personal-agent-harness/bin/pah status /path/to/my-project \
-  --harness-root ~/.local/share/personal-agent-harness
+# 3) 검증·버전 확인
+npx personal-agent-harness verify .
+npx personal-agent-harness status .
 ```
 
-`bootstrap.sh`는 `setup.sh`를 실행합니다. 기본 `rules`를 설치하고 verify를 실행합니다. 프로젝트 안에 `Personal-Agent-Harness/` 폴더를 만들지 않습니다.
+`init`은 기본 `rules`와 hooks를 설치하고 verify를 실행합니다. 프로젝트 안에 `Personal-Agent-Harness/` 폴더를 만들지 않습니다.
 
-환경 변수 `PAH_HOME`으로 경로를 바꿀 수 있습니다. 문서 예시는 기본값 `~/.local/share/personal-agent-harness`를 사용합니다.
+자주 쓰면 글로벌 설치:
+
+```bash
+npm install -g personal-agent-harness
+pah init /path/to/my-project
+pah update /path/to/my-project
+```
 
 ## 업데이트
 
 ```bash
+npx personal-agent-harness@latest update .
+```
+
+npm 배포본은 `git pull` 없이 새 패키지 버전으로 install, verify를 실행합니다. 관리 파일은 `.harness/backups/<timestamp>/`에 백업됩니다.
+
+## git checkout 워크플로우 (하네스 개발·legacy)
+
+```bash
+git clone <your-repo-url> ~/.local/share/personal-agent-harness
+~/.local/share/personal-agent-harness/bootstrap.sh /path/to/my-project
 ~/.local/share/personal-agent-harness/update.sh /path/to/my-project
 ```
 
-`update.sh`는 PAH_HOME harness clone에서 `git pull --ff-only`, install, verify 순으로 실행합니다. 관리 파일은 `.harness/backups/<timestamp>/`에 백업됩니다.
+git checkout에서는 `update.sh`가 `git pull --ff-only` 후 install, verify를 실행합니다.
 
 ### `Personal-Agent-Harness/` 폴더
 
@@ -61,8 +73,7 @@ copy mode이므로 규칙 파일은 대상 프로젝트에 복사됩니다. 하�
 예전 방식(프로젝트 안에 clone)을 쓰고 있다면 외부 PAH_HOME으로 옮긴 뒤 중첩 폴더를 제거합니다.
 
 ```bash
-git clone <your-repo-url> ~/.local/share/personal-agent-harness
-~/.local/share/personal-agent-harness/bootstrap.sh . --clean-nested
+npx personal-agent-harness init . --clean-nested
 ```
 
 `--clean-nested`는 설치 후 프로젝트 안의 `Personal-Agent-Harness/`를 삭제합니다.
@@ -74,7 +85,7 @@ git clone <your-repo-url> ~/.local/share/personal-agent-harness
 ### dry-run
 
 ```bash
-~/.local/share/personal-agent-harness/bin/pah install . --dry-run
+npx personal-agent-harness install . --dry-run
 ```
 
 실제 변경 없이 생성하거나 갱신할 파일을 확인합니다.
@@ -84,8 +95,8 @@ git clone <your-repo-url> ~/.local/share/personal-agent-harness
 devcontainer 스캐폴드와 `.gitignore` block은 기본 registry 밖에서 별도로 설치합니다.
 
 ```bash
-~/.local/share/personal-agent-harness/bin/pah install . --components rules,devcontainer,gitignore
-~/.local/share/personal-agent-harness/bin/pah verify .
+npx personal-agent-harness install . --components rules,devcontainer,gitignore
+npx personal-agent-harness verify .
 ```
 
 ```text
@@ -105,7 +116,7 @@ target-project/
 monorepo에서 `Personal-Agent-Harness/` 자체를 수정할 때는 부모 프로젝트 루트에 `harness-dev` rule을 한 번 설치할 수 있습니다.
 
 ```bash
-~/.local/share/personal-agent-harness/bin/pah install . --components harness-dev
+npx personal-agent-harness install . --components harness-dev
 ```
 
 - 기본 `setup.sh`와 `update.sh`에는 포함되지 않습니다.

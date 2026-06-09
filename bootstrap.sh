@@ -50,14 +50,11 @@ if [ -d "$TARGET/Personal-Agent-Harness/.git" ]; then
   log "WARNING: recommended: use external PAH_HOME and remove the nested folder"
 fi
 
-"$ROOT/setup.sh" "$TARGET"
-
-if [ "$CLEAN_NESTED" = "1" ] && [ -d "$TARGET/Personal-Agent-Harness" ]; then
-  rm -rf "$TARGET/Personal-Agent-Harness"
-  log "Removed nested harness folder: $TARGET/Personal-Agent-Harness"
+INIT_ARGS=("$TARGET")
+if [ "$CLEAN_NESTED" = "1" ]; then
+  INIT_ARGS+=("--clean-nested")
 fi
+"$ROOT/bin/pah" init "${INIT_ARGS[@]}"
 
-log "Harness rules installed into: $TARGET"
-log "Harness source (keep for updates): $ROOT"
-log "Update command: $ROOT/update.sh $TARGET"
-log "Status command: $ROOT/bin/pah status $TARGET --harness-root $ROOT"
+log "Harness source (git checkout): $ROOT"
+log "Status command: $ROOT/bin/pah status $TARGET"

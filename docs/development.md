@@ -86,6 +86,44 @@ bash tests/test_pah.sh
 
 ```bash
 mkdir -p /tmp/pah-demo && cd /tmp/pah-demo && git init
-/home/gjwoo96/gw-personal/Personal-Agent-Harness/bootstrap.sh .
-/home/gjwoo96/gw-personal/Personal-Agent-Harness/update.sh .
+/home/gjwoo96/gw-personal/Personal-Agent-Harness/bin/pah init .
+/home/gjwoo96/gw-personal/Personal-Agent-Harness/bin/pah update .
+```
+
+## Dev container (권장)
+
+WSL에서 Windows npm(`/mnt/c/Program Files/nodejs/`)이 WSL 경로의 `package.json`을 읽지 못하는 경우가 있습니다. 하네스 저장소에는 **개발자 전용** `.devcontainer/`가 있습니다.
+
+| 워크스페이스 | Dev container |
+|-------------|---------------|
+| `Personal-Agent-Harness/` 단독 열기 | **Reopen in Container** 사용 |
+| monorepo (`gw-personal/`) 루트 | 감지 안 됨 — 이 폴더를 직접 열기 |
+
+상세: [.devcontainer/README.md](../.devcontainer/README.md)
+
+컨테이너 안에서:
+
+```bash
+bash tests/test_pah.sh
+npm pack
+npm login          # 최초 1회
+npm publish        # OTP (2FA)
+```
+
+## npm publish (메인테이너, devcontainer 없이)
+
+WSL **내부**에서 Linux npm을 사용하세요. Windows 쪽 `npm`은 `\\wsl$` 경로를 읽지 못할 수 있습니다.
+
+```bash
+# WSL Ubuntu 터미널 (nvm/fnm으로 Node 24 권장)
+cd ~/gw-personal/Personal-Agent-Harness
+npm whoami          # 로그인 확인
+npm pack            # tarball 내용 검증
+npm publish         # OTP 입력 (2FA)
+```
+
+publish 후 다른 프로젝트에서:
+
+```bash
+npx personal-agent-harness init .
 ```
