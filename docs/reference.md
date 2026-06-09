@@ -12,7 +12,9 @@
 | `npx personal-agent-harness status <target>` | 설치 버전·업데이트 여부 |
 | `pah` | 글로벌 설치 시 bin (`npm install -g personal-agent-harness`) |
 
-git checkout 개발용: `bootstrap.sh`, `setup.sh`, `update.sh`, `bin/pah`
+git checkout 개발·legacy용: `bootstrap.sh`, `setup.sh`, `update.sh`, `bin/pah`
+
+npm 패키지에는 `setup.sh`, `update.sh`, `bootstrap.sh`, `install.sh`도 포함됩니다. 현재 `pah init/update`가 이 래퍼를 재사용하며, git checkout legacy 경로와 동일한 동작을 유지하기 위해 의도적으로 배포합니다.
 
 ## 기본 `rules` 설치 결과
 
@@ -30,7 +32,10 @@ target-project/
 ├── .cursor/rules/git-workflow-standards.mdc
 ├── AGENTS.md
 ├── CLAUDE.md
-└── .harness/manifest.json
+├── .harness/
+│   ├── hooks/
+│   └── manifest.json
+└── .claude/settings.json  (jq가 있으면 hooks 설치)
 ```
 
 각 `docs/<domain>/`에는 영문 표준과 사람용 `*.ko.md` 번역본이 들어갑니다.
@@ -38,7 +43,7 @@ target-project/
 ## `pah install`
 
 ```bash
-pah install <target> [--dry-run] [--force] [--components rules,devcontainer,gitignore,harness-dev]
+pah install <target> [--dry-run] [--force] [--components rules,devcontainer,gitignore,harness-dev,hooks]
 pah init <target> [--clean-nested]
 pah update <target>
 ```
@@ -47,11 +52,12 @@ pah update <target>
 |------|------|
 | `--dry-run` | 실제 변경 없이 대상 파일 목록 출력 |
 | `--force` | 기존 관리 파일 강제 덮어쓰기 |
-| `--components` | 설치 컴포넌트. 기본값: `rules` |
+| `--components` | 설치 컴포넌트. 기본값: `rules,hooks` |
 
 | 컴포넌트 | 내용 |
 |----------|------|
 | `rules` | registry에 등록된 표준, Cursor rule, Codex/Claude block |
+| `hooks` | Claude Code PreToolUse hooks. jq가 없으면 경고 후 advisory 모드 |
 | `devcontainer` | optional `.devcontainer/` 스캐폴드 |
 | `gitignore` | optional `.gitignore` managed block |
 | `harness-dev` | optional monorepo 하네스 개발 Cursor rule |
@@ -84,8 +90,9 @@ pah verify <target>
 registry 순서대로 다음을 확인합니다.
 
 - 도메인별 영문 표준, ko 번역본, Cursor rule 존재
-- `AGENTS.md`, `CLAUDE.md`의 `pah:<domain>` block 존재
+- `AGENTS.md`, `CLAUDE.md`의 `pah:<domain>` block 존재와 원본 stub 일치
 - AI stub의 영문 표준 참조와 `*.ko.md` 오참조 부재
+- 설치된 hooks의 실행 권한과 Claude settings 연결
 - `.harness/manifest.json` 존재
 - 설치 상태로 다시 생성한 canonical manifest와 기존 manifest의 완전 일치
 

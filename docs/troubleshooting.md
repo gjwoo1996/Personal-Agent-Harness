@@ -5,8 +5,8 @@
 먼저 verify와 dry-run을 실행합니다.
 
 ```bash
-~/.local/share/personal-agent-harness/bin/pah verify .
-~/.local/share/personal-agent-harness/bin/pah install . --dry-run
+npx personal-agent-harness verify .
+npx personal-agent-harness install . --dry-run
 ```
 
 갱신 전 파일은 `.harness/backups/<timestamp>/`에서 확인할 수 있습니다.
@@ -42,7 +42,7 @@ AI stub은 `docs/<domain>/<domain>-standards.md`만 규칙 출처로 참조해�
 `verify`는 현재 설치 파일에서 canonical manifest를 다시 생성해 `.harness/manifest.json`과 비교합니다. checksum, 도메인 순서, 관리 파일 목록이 다르면 install 또는 update를 다시 실행합니다.
 
 ```bash
-~/.local/share/personal-agent-harness/update.sh .
+npx personal-agent-harness@latest update .
 ```
 
 ## Nested harness / 중첩 git 저장소
@@ -50,34 +50,43 @@ AI stub은 `docs/<domain>/<domain>-standards.md`만 규칙 출처로 참조해�
 프로젝트 안에 `Personal-Agent-Harness/.git`이 있으면 중첩 git 저장소가 생깁니다.
 
 ```bash
-~/.local/share/personal-agent-harness/bootstrap.sh . --clean-nested
+npx personal-agent-harness init . --clean-nested
 ```
 
 또는 `gitignore` 컴포넌트로 `Personal-Agent-Harness/`를 무시합니다.
 
 ```bash
-~/.local/share/personal-agent-harness/bin/pah install . --components gitignore
+npx personal-agent-harness install . --components gitignore
 ```
 
 ## 하네스 업데이트 확인
 
-설치된 버전과 PAH_HOME 버전을 비교합니다.
+설치된 manifest 버전과 현재 실행 중인 npm CLI 버전을 비교합니다.
 
 ```bash
-~/.local/share/personal-agent-harness/bin/pah status . \
-  --harness-root ~/.local/share/personal-agent-harness
+npx personal-agent-harness@latest status .
 ```
 
-`update available`이 표시되면 `update.sh`를 실행합니다.
+`update available`이 표시되면 다음 명령을 실행합니다.
 
-## `update.sh`의 `git pull` 실패
+```bash
+npx personal-agent-harness@latest update .
+```
+
+## Legacy git checkout 사용 시
+
+이 섹션은 PAH를 대상 프로젝트 밖에 의도적으로 clone해서 쓰는 git checkout 경로에만 해당합니다. 일반 대상 프로젝트에는 npm/npx 명령을 사용합니다.
 
 `update.sh`는 `git pull --ff-only`를 사용합니다. harness clone의 로컬 커밋이나 원격과의 diverge 여부를 확인합니다.
+
+```bash
+~/.local/share/personal-agent-harness/update.sh .
+```
 
 ## Devcontainer 스캐폴드가 없음
 
 스캐폴드는 기본 `rules` 설치와 별도입니다.
 
 ```bash
-~/.local/share/personal-agent-harness/bin/pah install . --components rules,devcontainer,gitignore
+npx personal-agent-harness install . --components rules,devcontainer,gitignore
 ```

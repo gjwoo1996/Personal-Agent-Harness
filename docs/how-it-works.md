@@ -4,27 +4,30 @@
 
 ## Copy mode
 
-하네스 저장소가 원본이며 대상 프로젝트는 관리되는 복사본을 받습니다.
+하네스 npm 패키지가 원본이며 대상 프로젝트는 관리되는 복사본을 받습니다.
 
 ```text
-PAH_HOME/  (예: ~/.local/share/personal-agent-harness)
+npm package: personal-agent-harness
+  bin/pah
   config/rule-domains.txt
   standards/<domain>/
   templates/stubs/
         |
-        | bootstrap.sh / setup.sh / update.sh <target>
+        | npx personal-agent-harness init/update/install <target>
         v
 target-project/
   docs/<domain>/
   .cursor/rules/<domain>-standards.mdc
   AGENTS.md
   CLAUDE.md
+  .harness/hooks/<domain>.hook.sh
+  .claude/settings.json
   .harness/manifest.json
 ```
 
-하네스 소스는 PAH_HOME(프로젝트 밖)에 둡니다. 대상 프로젝트는 copy mode 산출물만 유지합니다.
+npm/npx 사용 시 하네스 소스는 npm 캐시 또는 글로벌 설치 위치에 있고, 대상 프로젝트에는 copy mode 산출물만 남습니다. git checkout은 하네스 개발이나 npm 없이 쓰는 legacy 경로입니다.
 
-기본 `rules` 설치에는 `devcontainer`, `git-workflow` 도메인이 포함됩니다.
+기본 `rules` 설치에는 `devcontainer`, `git-workflow` 도메인이 포함됩니다. 기본 install/init/update 흐름은 `rules,hooks`를 설치하며, jq가 없으면 hooks만 건너뛰고 advisory 모드로 동작합니다.
 
 ## Copy mode를 기본으로 사용하는 이유
 
@@ -37,7 +40,7 @@ target-project/
 
 단점:
 
-- 하네스 저장소 변경은 대상 프로젝트에 자동 반영되지 않습니다. `update.sh`를 실행해야 합니다.
+- 새 npm 패키지 버전은 대상 프로젝트에 자동 반영되지 않습니다. `npx personal-agent-harness@latest update .`를 실행해야 합니다.
 
 ## Rule Domain Registry
 
@@ -50,6 +53,7 @@ standards/<domain>/<domain>-standards.md
 standards/<domain>/<domain>-standards.ko.md
 templates/stubs/agent-blocks/<domain>.md
 templates/stubs/cursor/<domain>-standards.mdc
+templates/stubs/hooks/<domain>.hook.sh  (선택)
 ```
 
 registry는 의도적으로 명시적입니다. `standards/*`를 자동 탐색하지 않으므로 미완성 도메인은 등록 전까지 기본 설치에 포함되지 않습니다.
@@ -58,6 +62,7 @@ registry는 의도적으로 명시적입니다. `standards/*`를 자동 탐색�
 
 - Cursor rule은 `docs/<domain>/<domain>-standards.md`를 참조합니다.
 - `agent-blocks/<domain>.md` 단일 원본은 `AGENTS.md`와 `CLAUDE.md` 양쪽에 병합됩니다.
+- hook stub이 있는 도메인은 `.harness/hooks/`에 설치되고 Claude Code `PreToolUse`에 연결됩니다.
 - AI 연결 파일은 영문 표준만 규칙 출처로 사용합니다. `*.ko.md`는 사람용 번역입니다.
 
 managed block은 도메인별로 독립 갱신됩니다.
@@ -78,7 +83,7 @@ block 밖의 프로젝트 고유 내용은 보존됩니다.
 
 `.harness/manifest.json`의 `standards.<domain>.en`과 `standards.<domain>.ko`에는 설치 경로와 checksum이 기록됩니다. `ko` 항목은 `ai_readable: false`입니다.
 
-`verify`는 등록 도메인의 파일, block marker, 영문 참조, ko 오참조 여부를 검사합니다. 이어서 현재 설치 상태에서 canonical manifest를 다시 생성하고 기존 manifest와 완전히 일치하는지 확인합니다.
+`verify`는 등록 도메인의 파일, block marker, managed block 내용, 영문 참조, ko 오참조 여부를 검사합니다. 설치된 hook이 있으면 실행 권한과 Claude settings 연결도 확인합니다. 이어서 현재 설치 상태에서 canonical manifest를 다시 생성하고 기존 manifest와 완전히 일치하는지 확인합니다.
 
 ## 규칙 우선순위
 
@@ -96,25 +101,20 @@ devcontainer 예외는 `.devcontainer/README.md`, git-workflow 예외는 `docs/g
 optional devcontainer 스캐폴드, `.gitignore` managed block, monorepo용 `harness-dev` rule은 registry 밖에서 별도로 유지됩니다.
 
 ```bash
-~/.local/share/personal-agent-harness/bin/pah install . --components rules,devcontainer,gitignore
-~/.local/share/personal-agent-harness/bin/pah install . --components harness-dev
+npx personal-agent-harness install . --components rules,devcontainer,gitignore
+npx personal-agent-harness install . --components harness-dev
 ```
 
 ## 업데이트
 
 ```text
-PAH_HOME/.git  --bootstrap/update-->  target-project/.harness/manifest.json
-                                      target-project/docs/...
-```
-
-```text
-1. 하네스 저장소에 변경 push
-2. PAH_HOME에서 git pull --ff-only (update.sh가 수행)
-3. update.sh <target> → install → verify
+1. 메인테이너가 새 npm 버전을 publish
+2. 대상 프로젝트에서 npx personal-agent-harness@latest update .
+3. CLI가 rules,hooks를 install한 뒤 verify 실행
 4. 기존 관리 파일은 .harness/backups/<timestamp>/에 백업
 ```
 
-프로젝트 안 in-project clone은 legacy입니다. `bootstrap.sh --clean-nested`로 마이그레이션합니다.
+git checkout에서 `update.sh`로 갱신하는 흐름은 하네스 개발·legacy 경로입니다. 프로젝트 안 in-project clone은 legacy이며, `npx personal-agent-harness init . --clean-nested`로 마이그레이션합니다.
 
 ## 아직 하지 않는 일
 

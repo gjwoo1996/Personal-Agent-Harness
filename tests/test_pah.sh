@@ -225,6 +225,10 @@ cp -a "$ROOT/bin" "$ROOT/config" "$ROOT/standards" "$ROOT/templates" "$NPM_ROOT/
 cp -a "$ROOT/bootstrap.sh" "$ROOT/setup.sh" "$ROOT/update.sh" "$ROOT/install.sh" "$ROOT/VERSION" "$NPM_ROOT/"
 assert_file "$NPM_ROOT/bin/pah"
 assert_file "$NPM_ROOT/bin/pah-entry"
+assert_file "$NPM_ROOT/setup.sh"
+assert_file "$NPM_ROOT/update.sh"
+assert_file "$NPM_ROOT/bootstrap.sh"
+assert_file "$NPM_ROOT/install.sh"
 assert_file "$NPM_ROOT/standards/devcontainer/devcontainer-standards.md"
 assert_not_file "$NPM_ROOT/docs/development.md"
 NPM_TARGET="$TMP_ROOT/npm-target"
@@ -310,6 +314,12 @@ mkdir -p "$KO_REF_TARGET"
 "$PAH" install "$KO_REF_TARGET"
 printf '\nRead docs/git-workflow/git-workflow-standards.ko.md\n' >> "$KO_REF_TARGET/.cursor/rules/git-workflow-standards.mdc"
 assert_command_fails "$PAH" verify "$KO_REF_TARGET"
+
+BLOCK_DRIFT_TARGET="$TMP_ROOT/block-drift-target"
+mkdir -p "$BLOCK_DRIFT_TARGET"
+"$PAH" install "$BLOCK_DRIFT_TARGET"
+sed -i '/<!-- pah:devcontainer:start -->/a Managed block drift.' "$BLOCK_DRIFT_TARGET/AGENTS.md"
+assert_command_fails "$PAH" verify "$BLOCK_DRIFT_TARGET"
 
 SOURCE_KO_REF_ROOT="$TMP_ROOT/source-ko-ref-root"
 cp -a "$ROOT" "$SOURCE_KO_REF_ROOT"
@@ -410,6 +420,22 @@ else
   "$PAH" install "$HOOKS_SETTINGS_TARGET" --components rules,hooks
   printf '{"hooks":{"PreToolUse":[]}}\n' > "$HOOKS_SETTINGS_TARGET/.claude/settings.json"
   assert_command_fails "$PAH" verify "$HOOKS_SETTINGS_TARGET"
+
+  # hooks: verify fails if matcher exists but command shape is wrong
+  HOOKS_SHAPE_TARGET="$TMP_ROOT/hooks-shape-target"
+  mkdir -p "$HOOKS_SHAPE_TARGET"
+  "$PAH" install "$HOOKS_SHAPE_TARGET" --components rules,hooks
+  jq '.hooks.PreToolUse |= map(if .matcher == "Bash" then .hooks = [{type: "prompt", command: "bash .harness/hooks/git-workflow.hook.sh"}] else . end)' \
+    "$HOOKS_SHAPE_TARGET/.claude/settings.json" > "$HOOKS_SHAPE_TARGET/.claude/settings.json.tmp"
+  mv "$HOOKS_SHAPE_TARGET/.claude/settings.json.tmp" "$HOOKS_SHAPE_TARGET/.claude/settings.json"
+  assert_command_fails "$PAH" verify "$HOOKS_SHAPE_TARGET"
+
+  # hooks: verify fails if hook script loses execute permission
+  HOOKS_MODE_TARGET="$TMP_ROOT/hooks-mode-target"
+  mkdir -p "$HOOKS_MODE_TARGET"
+  "$PAH" install "$HOOKS_MODE_TARGET" --components rules,hooks
+  chmod 644 "$HOOKS_MODE_TARGET/.harness/hooks/git-workflow.hook.sh"
+  assert_command_fails "$PAH" verify "$HOOKS_MODE_TARGET"
 
   # hooks: hooks-only install on top of existing rules installation
   HOOKS_ONLY_TARGET="$TMP_ROOT/hooks-only-target"

@@ -1,3 +1,7 @@
+volumes:
+  pah-claude-config:
+  pah-codex-config:
+
 services:
   workspace:
     build:
@@ -8,4 +12,6 @@ services:
         CODEX_CLI_VERSION: ${CODEX_CLI_VERSION:?Set CODEX_CLI_VERSION in .devcontainer/.env}
     volumes:
       - ..:${containerWorkspaceFolder}:cached
+      - pah-claude-config:/home/vscode/.claude
+      - pah-codex-config:/home/vscode/.codex
     command: sleep infinity

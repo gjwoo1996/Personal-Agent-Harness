@@ -70,6 +70,15 @@ verify_contains() {
   grep -Fq "$pattern" "$file" || die "missing '$pattern' in $file"
 }
 
+file_mode() {
+  local file="$1"
+  if stat -c '%a' "$file" >/dev/null 2>&1; then
+    stat -c '%a' "$file"
+  else
+    stat -f '%Lp' "$file"
+  fi
+}
+
 load_rule_domains() {
   [ -f "$RULE_DOMAINS_FILE" ] || die "missing rule domain registry: $RULE_DOMAINS_FILE"
 
@@ -147,7 +156,11 @@ preflight_rule_install() {
 }
 
 sha256_file() {
-  sha256sum "$1" | awk '{print $1}'
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | awk '{print $1}'
+  else
+    shasum -a 256 "$1" | awk '{print $1}'
+  fi
 }
 
 backup_file() {
@@ -218,12 +231,13 @@ merge_agent_block() {
       printf '# %s\n\n' "$title"
       cat "$block_src"
     } > "$dest"
+    chmod 644 "$dest"
     return 0
   fi
 
   local tmp
   tmp="$(mktemp "$dest.tmp.XXXXXX")"
-  chmod "$(stat -c '%a' "$dest")" "$tmp"
+  chmod "$(file_mode "$dest")" "$tmp"
   if grep -Fq "$start" "$dest"; then
     awk -v start="$start" -v end="$end" -v block_src="$block_src" '
       function print_block(   line) {
@@ -372,7 +386,8 @@ EOF
   backup_file "$target" "$rel" "$backup_dir"
   if [ -f "$dest" ] && grep -Fq '# pah:managed:start' "$dest"; then
     local tmp
-    tmp="$(mktemp)"
+    tmp="$(mktemp "$dest.tmp.XXXXXX")"
+    chmod "$(file_mode "$dest")" "$tmp"
     awk -v block="$block" '
       /# pah:managed:start/ {
         print block
@@ -391,6 +406,7 @@ EOF
       [ -f "$dest" ] && cat "$dest"
       printf '\n%s\n' "$block"
     } > "$dest"
+    chmod 644 "$dest"
   fi
 }
 
@@ -462,7 +478,7 @@ merge_settings_json() {
       '{hooks: {PreToolUse: $pah}}' > "$tmp" \
       || { rm -f "$tmp"; die "failed to create .claude/settings.json"; }
   else
-    chmod "$(stat -c '%a' "$settings_file")" "$tmp"
+    chmod "$(file_mode "$settings_file")" "$tmp"
     jq \
       --argjson pah "$pah_hooks" \
       '.hooks.PreToolUse = (
@@ -515,11 +531,35 @@ install_hooks_component() {
 verify_hooks_if_installed() {
   local target="$1"
   local domain
+  local matcher
+  local matcher_arr
+  local matchers
 
   for domain in "${RULE_DOMAINS[@]}"; do
     [ -f "$target/.harness/hooks/$domain.hook.sh" ] || continue
+    [ -x "$target/.harness/hooks/$domain.hook.sh" ] || die "hook script is not executable: $target/.harness/hooks/$domain.hook.sh"
     verify_file "$target/.claude/settings.json"
-    verify_contains "$target/.claude/settings.json" ".harness/hooks/$domain.hook.sh"
+    if jq_available; then
+      jq empty "$target/.claude/settings.json" >/dev/null || die "invalid JSON: $target/.claude/settings.json"
+      matchers="$(read_hook_matchers "$ROOT/templates/stubs/hooks/$domain.hook.sh")"
+      [ -n "$matchers" ] || die "missing PAH_MATCHERS for hook domain: $domain"
+      IFS=',' read -r -a matcher_arr <<< "$matchers"
+      for matcher in "${matcher_arr[@]}"; do
+        matcher="${matcher#"${matcher%%[![:space:]]*}"}"
+        matcher="${matcher%"${matcher##*[![:space:]]}"}"
+        [ -n "$matcher" ] || continue
+        jq -e \
+          --arg m "$matcher" \
+          --arg cmd "bash .harness/hooks/$domain.hook.sh" \
+          '.hooks.PreToolUse // [] |
+           any(.matcher == $m and ((.hooks // []) |
+             any(.type == "command" and .command == $cmd)))' \
+          "$target/.claude/settings.json" >/dev/null \
+          || die "missing Claude PreToolUse hook for $domain matcher $matcher"
+      done
+    else
+      verify_contains "$target/.claude/settings.json" ".harness/hooks/$domain.hook.sh"
+    fi
   done
 }
 
@@ -555,7 +595,7 @@ cmd_install() {
     load_rule_domains
     preflight_rule_install "$target"
   fi
-  if has_component "$components" "hooks" && jq_available; then
+  if has_component "$components" "hooks"; then
     if ! has_component "$components" "rules"; then
       [ -f "$target/.harness/manifest.json" ] || die "hooks component requires rules component or an existing rules installation"
       [ "${#RULE_DOMAINS[@]}" -gt 0 ] || load_rule_domains
@@ -610,12 +650,43 @@ verify_rule_domain() {
   verify_file "$target/$cursor_rel"
   validate_managed_block "$target/AGENTS.md" "$domain" required
   validate_managed_block "$target/CLAUDE.md" "$domain" required
+  verify_agent_block_matches_source "$target/AGENTS.md" "$ROOT/templates/stubs/agent-blocks/$domain.md" "$domain"
+  verify_agent_block_matches_source "$target/CLAUDE.md" "$ROOT/templates/stubs/agent-blocks/$domain.md" "$domain"
   verify_contains "$target/$cursor_rel" "$en_rel"
 
   if grep -Fq "$domain-standards.ko.md" "$target/$cursor_rel" "$target/AGENTS.md" "$target/CLAUDE.md"; then
     die "AI stubs must not reference $domain-standards.ko.md as a rule source"
   fi
 
+}
+
+extract_managed_block() {
+  local file="$1"
+  local domain="$2"
+  local output="$3"
+  local start="<!-- pah:$domain:start -->"
+  local end="<!-- pah:$domain:end -->"
+
+  awk -v start="$start" -v end="$end" '
+    $0 == start { printing=1 }
+    printing { print }
+    $0 == end { exit }
+  ' "$file" > "$output"
+}
+
+verify_agent_block_matches_source() {
+  local target_file="$1"
+  local source_file="$2"
+  local domain="$3"
+  local actual
+
+  actual="$(mktemp)"
+  extract_managed_block "$target_file" "$domain" "$actual"
+  if ! cmp -s "$source_file" "$actual"; then
+    rm -f "$actual"
+    die "managed block drift detected for pah:$domain in $target_file"
+  fi
+  rm -f "$actual"
 }
 
 cmd_verify() {

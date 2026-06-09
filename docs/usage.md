@@ -13,7 +13,7 @@
 ## 준비물
 
 - Node.js 24 LTS 권장, 최소 22 (`npx` 실행)
-- Linux 또는 WSL에서 실행되는 Bash
+- Linux, macOS, 또는 WSL에서 실행되는 Bash
 - 하네스를 적용할 대상 프로젝트 디렉터리
 
 대상 프로젝트가 git 저장소일 필요는 없지만, 생성된 파일을 검토하기 쉽도록 git 저장소 사용을 권장합니다.
@@ -52,6 +52,8 @@ npm 배포본은 `git pull` 없이 새 패키지 버전으로 install, verify를
 
 ## git checkout 워크플로우 (하네스 개발·legacy)
 
+이 섹션은 하네스 자체를 수정하거나 npm 없이 써야 할 때만 사용합니다. 일반 대상 프로젝트 적용은 위의 npm/npx 워크플로우를 사용합니다.
+
 ```bash
 git clone <your-repo-url> ~/.local/share/personal-agent-harness
 ~/.local/share/personal-agent-harness/bootstrap.sh /path/to/my-project
@@ -80,7 +82,7 @@ npx personal-agent-harness init . --clean-nested
 
 ## 고급 옵션
 
-기본 `setup.sh`와 `update.sh`는 `rules`만 설치합니다. 추가 옵션이 필요하면 `bin/pah`를 직접 사용합니다.
+기본 `init`과 `update`는 `rules,hooks`를 설치합니다. 추가 옵션이 필요하면 `install`을 직접 사용합니다.
 
 ### dry-run
 
@@ -119,7 +121,7 @@ monorepo에서 `Personal-Agent-Harness/` 자체를 수정할 때는 부모 프�
 npx personal-agent-harness install . --components harness-dev
 ```
 
-- 기본 `setup.sh`와 `update.sh`에는 포함되지 않습니다.
+- 기본 `init`과 `update`에는 포함되지 않습니다.
 - 자세한 설명은 [하네스 개발·테스트](development.md#ai-연결-활성화)를 참고하세요.
 
 ## 기존 AI 파일 처리
