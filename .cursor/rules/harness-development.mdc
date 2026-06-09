@@ -9,8 +9,8 @@ harness-internal: true
 
 When modifying **Personal-Agent-Harness itself** (not applying the harness to other projects), first read:
 
-- `docs/adding-rule-domains.md` — adding new rule domains
-- `docs/development.md` — harness development and testing
+- `docs/internal/adding-rule-domains.md` — adding new rule domains
+- `docs/internal/development.md` — harness development and testing
 
 Follow those documents for harness engineering work.
 

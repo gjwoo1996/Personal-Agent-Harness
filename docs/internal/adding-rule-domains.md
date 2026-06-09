@@ -2,11 +2,11 @@
 
 > **하네스 저장소 내부 전용:** 이 문서는 대상 프로젝트에 복사되지 않습니다.
 
-> **관련 문서:** [문서 목록](README.md) · [하네스 개발](development.md) · [작동 방식](how-it-works.md)
+> **관련 문서:** [문서 목록](../README.md) · [하네스 개발](development.md) · [작동 방식](../how-it-works.md)
 
 ## Registry
 
-[../config/rule-domains.txt](../config/rule-domains.txt)는 기본 `rules` 설치에 포함할 도메인의 명시적 registry입니다.
+[../../config/rule-domains.txt](../../config/rule-domains.txt)는 기본 `rules` 설치에 포함할 도메인의 명시적 registry입니다.
 
 - 등록 순서가 install, manifest, verify 순서를 결정합니다.
 - 미완성 도메인은 기본 배포 준비가 끝날 때까지 등록하지 않습니다.

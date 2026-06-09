@@ -20,8 +20,21 @@
 
 | 문서 | 내용 |
 |------|------|
-| [development.md](./development.md) | 테스트, 변경 후 확인 순서, monorepo `harness-dev` 설정 |
-| [adding-rule-domains.md](./adding-rule-domains.md) | registry 기반 규칙 도메인 추가 절차 |
+| [internal/README.md](./internal/README.md) | 내부 개발 문서 목록 |
+| [internal/development.md](./internal/development.md) | 테스트, 변경 후 확인 순서, monorepo `harness-dev` 설정 |
+| [internal/adding-rule-domains.md](./internal/adding-rule-domains.md) | registry 기반 규칙 도메인 추가 절차 |
+
+## 이력 아카이브
+
+아래 문서는 과거 설계, 구현 계획, 리뷰, handoff 기록입니다. 현재 사용법은 위의 사용자 문서와 하네스 개발 문서를 우선합니다.
+
+| 폴더 | 내용 |
+|------|------|
+| [archive/README.md](./archive/README.md) | 이력 아카이브 안내 |
+| [archive/specs/](./archive/specs/) | 설계 스펙 기록 |
+| [archive/plans/](./archive/plans/) | 구현 계획 기록 |
+| [archive/reviews/](./archive/reviews/) | 분석·리뷰 기록 |
+| [archive/handoffs/](./archive/handoffs/) | 작업 인수인계 기록 |
 
 ## 진입점 스크립트
 

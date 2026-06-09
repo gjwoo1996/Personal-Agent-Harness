@@ -62,7 +62,7 @@ npm whoami
 npm pack
 tar -tzf personal-agent-harness-0.3.1.tgz | head -20
 # standards/, bin/pah 포함
-# docs/development.md 미포함 확인
+# docs/internal/development.md 미포함 확인
 
 # 3) 배포
 npm publish

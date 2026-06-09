@@ -122,7 +122,7 @@ npx personal-agent-harness install . --components harness-dev
 ```
 
 - 기본 `init`과 `update`에는 포함되지 않습니다.
-- 자세한 설명은 [하네스 개발·테스트](development.md#ai-연결-활성화)를 참고하세요.
+- 자세한 설명은 [하네스 개발·테스트](internal/development.md#ai-연결-활성화)를 참고하세요.
 
 ## 기존 AI 파일 처리
 

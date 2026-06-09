@@ -1,6 +1,6 @@
 # 하네스 개발·테스트
 
-> **관련 문서:** [문서 목록](README.md) · [규칙 도메인 추가](adding-rule-domains.md) · [CLI 레퍼런스](reference.md)
+> **관련 문서:** [문서 목록](../README.md) · [규칙 도메인 추가](adding-rule-domains.md) · [CLI 레퍼런스](../reference.md)
 
 ## 저장소 구조
 
@@ -99,7 +99,7 @@ WSL에서 Windows npm(`/mnt/c/Program Files/nodejs/`)이 WSL 경로의 `package.
 | `Personal-Agent-Harness/` 단독 열기 | **Reopen in Container** 사용 |
 | monorepo (`gw-personal/`) 루트 | 감지 안 됨 — 이 폴더를 직접 열기 |
 
-상세: [.devcontainer/README.md](../.devcontainer/README.md)
+상세: [.devcontainer/README.md](../../.devcontainer/README.md)
 
 컨테이너 안에서:
 
