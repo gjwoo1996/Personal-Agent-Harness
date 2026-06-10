@@ -8,4 +8,15 @@ services:
         CODEX_CLI_VERSION: ${CODEX_CLI_VERSION:?Set CODEX_CLI_VERSION in .devcontainer/.env}
     volumes:
       - ..:${containerWorkspaceFolder}:cached
+      - claude-config:/home/vscode/.claude
+      - claude-json:/home/vscode/.ai-state/claude
+      - codex-config:/home/vscode/.codex
     command: sleep infinity
+
+volumes:
+  claude-config:
+    name: ${aiStateVolumePrefix}-claude-config
+  claude-json:
+    name: ${aiStateVolumePrefix}-claude-json
+  codex-config:
+    name: ${aiStateVolumePrefix}-codex-config

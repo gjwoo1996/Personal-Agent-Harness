@@ -8,6 +8,13 @@ localWorkspaceFolder="${1:-$REPO_ROOT}"
 containerWorkspaceFolder="${2:-/home/vscode/$(basename "$REPO_ROOT")}"
 localWorkspaceFolderBasename="${3:-$(basename "$REPO_ROOT")}"
 containerWorkspaceFolderBasename="${4:-$(basename "$REPO_ROOT")}"
+workspaceSlug="$(printf '%s' "$localWorkspaceFolderBasename" \
+  | tr '[:upper:]' '[:lower:]' \
+  | sed -E 's/[^a-z0-9_.-]+/-/g; s/^-+//; s/-+$//')"
+if [ -z "$workspaceSlug" ]; then
+  workspaceSlug="workspace"
+fi
+aiStateVolumePrefix="${workspaceSlug}-ai-state"
 
 CLAUDE_CODE_VERSION=
 CODEX_CLI_VERSION=
@@ -27,9 +34,10 @@ localWorkspaceFolder=${localWorkspaceFolder}
 containerWorkspaceFolder=${containerWorkspaceFolder}
 localWorkspaceFolderBasename=${localWorkspaceFolderBasename}
 containerWorkspaceFolderBasename=${containerWorkspaceFolderBasename}
+aiStateVolumePrefix=${aiStateVolumePrefix}
 
 CLAUDE_CODE_VERSION=${CLAUDE_CODE_VERSION}
 CODEX_CLI_VERSION=${CODEX_CLI_VERSION}
 EOF
 
-echo "Wrote .devcontainer/.env (containerWorkspaceFolder=${containerWorkspaceFolder})"
+echo "Wrote .devcontainer/.env (containerWorkspaceFolder=${containerWorkspaceFolder}, aiStateVolumePrefix=${aiStateVolumePrefix})"
