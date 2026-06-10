@@ -1,6 +1,6 @@
 # 하네스 개발·테스트
 
-> **관련 문서:** [문서 목록](../README.md) · [규칙 도메인 추가](adding-rule-domains.md) · [CLI 레퍼런스](../reference.md)
+> **관련 문서:** [개발 문서 목록](../README.md) · [규칙 도메인 추가](adding-rule-domains.md) · [CLI 레퍼런스](../../docs/reference.md)
 
 ## 저장소 구조
 
@@ -14,6 +14,7 @@ Personal-Agent-Harness/
 │   ├── stubs/cursor/
 │   ├── devcontainer/
 │   └── harness-dev/
+├── dev-docs/
 ├── docs/
 └── tests/test_pah.sh
 ```

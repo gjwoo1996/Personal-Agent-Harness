@@ -60,4 +60,4 @@ pah update /path/to/my-project
 | [docs/reference.md](docs/reference.md) | `pah` CLI 레퍼런스, 설치 결과, verify 항목 |
 | [docs/troubleshooting.md](docs/troubleshooting.md) | 문제 해결, 백업 복구 |
 
-하네스 개발·배포(git checkout, npm publish 포함)는 [docs/internal/development.md](docs/internal/development.md)를 참고하세요.
+하네스 개발·배포(git checkout, npm publish 포함)는 [dev-docs/internal/development.md](dev-docs/internal/development.md)를 참고하세요.

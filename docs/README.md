@@ -20,9 +20,9 @@
 
 | 문서 | 내용 |
 |------|------|
-| [internal/README.md](./internal/README.md) | 내부 개발 문서 목록 |
-| [internal/development.md](./internal/development.md) | 테스트, 변경 후 확인 순서, monorepo `harness-dev` 설정 |
-| [internal/adding-rule-domains.md](./internal/adding-rule-domains.md) | registry 기반 규칙 도메인 추가 절차 |
+| [../dev-docs/internal/README.md](../dev-docs/internal/README.md) | 내부 개발 문서 목록 |
+| [../dev-docs/internal/development.md](../dev-docs/internal/development.md) | 테스트, 변경 후 확인 순서, monorepo `harness-dev` 설정 |
+| [../dev-docs/internal/adding-rule-domains.md](../dev-docs/internal/adding-rule-domains.md) | registry 기반 규칙 도메인 추가 절차 |
 
 ## 이력 아카이브
 
@@ -30,11 +30,11 @@
 
 | 폴더 | 내용 |
 |------|------|
-| [archive/README.md](./archive/README.md) | 이력 아카이브 안내 |
-| [archive/specs/](./archive/specs/) | 설계 스펙 기록 |
-| [archive/plans/](./archive/plans/) | 구현 계획 기록 |
-| [archive/reviews/](./archive/reviews/) | 분석·리뷰 기록 |
-| [archive/handoffs/](./archive/handoffs/) | 작업 인수인계 기록 |
+| [../dev-docs/archive/README.md](../dev-docs/archive/README.md) | 이력 아카이브 안내 |
+| [../dev-docs/archive/specs/](../dev-docs/archive/specs/) | 설계 스펙 기록 |
+| [../dev-docs/archive/plans/](../dev-docs/archive/plans/) | 구현 계획 기록 |
+| [../dev-docs/archive/reviews/](../dev-docs/archive/reviews/) | 분석·리뷰 기록 |
+| [../dev-docs/archive/handoffs/](../dev-docs/archive/handoffs/) | 작업 인수인계 기록 |
 
 ## 진입점 스크립트
 

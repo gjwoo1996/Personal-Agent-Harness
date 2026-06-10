@@ -4,8 +4,8 @@
 
 When modifying **this repository** (adding rule domains, changing `bin/pah`, stubs, or standards), first read:
 
-- `docs/internal/adding-rule-domains.md`
-- `docs/internal/development.md`
+- `dev-docs/internal/adding-rule-domains.md`
+- `dev-docs/internal/development.md`
 
 These are harness-internal docs. They are **not** installed to target projects by `pah install`.
 

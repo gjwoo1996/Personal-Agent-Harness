@@ -2,7 +2,7 @@
 
 > **하네스 저장소 내부 전용:** 이 문서는 대상 프로젝트에 복사되지 않습니다.
 
-> **관련 문서:** [문서 목록](../README.md) · [하네스 개발](development.md) · [작동 방식](../how-it-works.md)
+> **관련 문서:** [개발 문서 목록](../README.md) · [하네스 개발](development.md) · [작동 방식](../../docs/how-it-works.md)
 
 ## Registry
 

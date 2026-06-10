@@ -1,6 +1,6 @@
 # etc — 작업 정리 문서
 
-Personal-Agent-Harness 워크플로우 개선 작업(2026-06-09~)의 요청·진행·잔여 사항을 정리한 폴더입니다.
+Personal-Agent-Harness 워크플로우 개선 작업(2026-06-09~)의 요청·진행·잔여 사항을 정리한 개발 문서 폴더입니다.
 
 ## 문서 목록
 
@@ -17,9 +17,9 @@ Personal-Agent-Harness 워크플로우 개선 작업(2026-06-09~)의 요청·진
 
 | 경로 | 내용 |
 |------|------|
-| `docs/archive/specs/2026-06-09-external-harness-workflow-design.md` | 외부 워크플로우 설계 스펙 |
-| `docs/archive/plans/2026-06-09-external-harness-workflow.md` | 외부 워크플로우 구현 계획 |
-| `docs/archive/plans/` (npm CLI) | npm 전환 계획은 본 폴더 `04-남은-작업.md` 및 대화 기록 참고 |
+| `dev-docs/archive/specs/2026-06-09-external-harness-workflow-design.md` | 외부 워크플로우 설계 스펙 |
+| `dev-docs/archive/plans/2026-06-09-external-harness-workflow.md` | 외부 워크플로우 구현 계획 |
+| `dev-docs/archive/plans/` (npm CLI) | npm 전환 계획은 본 폴더 `04-남은-작업.md` 및 대화 기록 참고 |
 
 ## 현재 브랜치
 
