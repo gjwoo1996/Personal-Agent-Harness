@@ -16,14 +16,13 @@ if [ -z "$workspaceSlug" ]; then
 fi
 aiStateVolumePrefix="${workspaceSlug}-ai-state"
 
-CLAUDE_CODE_VERSION=
 CODEX_CLI_VERSION=
 if [ -f .env.example ]; then
   # shellcheck disable=SC1091
   source .env.example
 fi
-if [ -z "${CLAUDE_CODE_VERSION}" ] || [ -z "${CODEX_CLI_VERSION}" ]; then
-  echo "ERROR: set CLAUDE_CODE_VERSION and CODEX_CLI_VERSION in .devcontainer/.env.example" >&2
+if [ -z "${CODEX_CLI_VERSION}" ]; then
+  echo "ERROR: set CODEX_CLI_VERSION in .devcontainer/.env.example" >&2
   exit 1
 fi
 
@@ -36,7 +35,6 @@ localWorkspaceFolderBasename=${localWorkspaceFolderBasename}
 containerWorkspaceFolderBasename=${containerWorkspaceFolderBasename}
 aiStateVolumePrefix=${aiStateVolumePrefix}
 
-CLAUDE_CODE_VERSION=${CLAUDE_CODE_VERSION}
 CODEX_CLI_VERSION=${CODEX_CLI_VERSION}
 EOF
 
