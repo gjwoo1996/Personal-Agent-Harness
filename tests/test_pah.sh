@@ -143,15 +143,20 @@ assert_file "$SCAFFOLD/.devcontainer/docker-compose.dev.yml"
 assert_file "$SCAFFOLD/.devcontainer/Dockerfile"
 assert_file "$SCAFFOLD/.devcontainer/commands/initializeCommand.sh"
 assert_file "$SCAFFOLD/.devcontainer/commands/post-create.sh"
+assert_file "$SCAFFOLD/.devcontainer/commands/init-firewall.sh"
 assert_file "$SCAFFOLD/.devcontainer/README.md"
+assert_contains "$SCAFFOLD/.devcontainer/devcontainer.json" 'ghcr.io/anthropics/devcontainer-features/claude-code:1.0'
+assert_not_contains "$SCAFFOLD/.devcontainer/devcontainer.json" 'anthropic.claude-code'
 assert_contains "$SCAFFOLD/.devcontainer/docker-compose.dev.yml" 'claude-config:/home/vscode/.claude'
 assert_contains "$SCAFFOLD/.devcontainer/docker-compose.dev.yml" 'claude-json:/home/vscode/.ai-state/claude'
 assert_contains "$SCAFFOLD/.devcontainer/docker-compose.dev.yml" 'codex-config:/home/vscode/.codex'
+assert_not_contains "$SCAFFOLD/.devcontainer/docker-compose.dev.yml" 'CLAUDE_CODE_VERSION'
 assert_contains "$SCAFFOLD/.devcontainer/docker-compose.dev.yml" 'name: ${aiStateVolumePrefix}-claude-config'
 assert_contains "$SCAFFOLD/.devcontainer/docker-compose.dev.yml" 'name: ${aiStateVolumePrefix}-claude-json'
 assert_contains "$SCAFFOLD/.devcontainer/docker-compose.dev.yml" 'name: ${aiStateVolumePrefix}-codex-config'
 assert_not_contains "$SCAFFOLD/.devcontainer/docker-compose.dev.yml" '${devcontainerId}'
 assert_contains "$SCAFFOLD/.devcontainer/commands/initializeCommand.sh" 'aiStateVolumePrefix='
+assert_not_contains "$SCAFFOLD/.devcontainer/commands/initializeCommand.sh" 'CLAUDE_CODE_VERSION'
 assert_contains "$SCAFFOLD/.devcontainer/commands/post-create.sh" 'ln -sfn /home/vscode/.ai-state/claude/.claude.json /home/vscode/.claude.json'
 assert_contains "$SCAFFOLD/.devcontainer/README.md" 'AI State Storage'
 assert_contains "$SCAFFOLD/.devcontainer/README.md" 'Docker named volumes'
@@ -159,8 +164,11 @@ assert_contains "$SCAFFOLD/.devcontainer/README.md" '/home/vscode/.claude'
 assert_contains "$SCAFFOLD/.devcontainer/README.md" '/home/vscode/.claude.json'
 assert_contains "$SCAFFOLD/.devcontainer/README.md" '/home/vscode/.codex'
 assert_contains "$SCAFFOLD/.devcontainer/README.md" 'docker volume rm'
-assert_contains "$SCAFFOLD/.devcontainer/.env.example" 'CLAUDE_CODE_VERSION=2.1.170'
+assert_not_contains "$SCAFFOLD/.devcontainer/.env.example" 'CLAUDE_CODE_VERSION'
 assert_contains "$SCAFFOLD/.devcontainer/.env.example" 'CODEX_CLI_VERSION=0.139.0'
+assert_not_contains "$SCAFFOLD/.devcontainer/Dockerfile" '@anthropic-ai/claude-code'
+assert_not_contains "$SCAFFOLD/.devcontainer/Dockerfile" 'CLAUDE_CODE_VERSION'
+assert_contains "$SCAFFOLD/.devcontainer/Dockerfile" '@openai/codex@${CODEX_CLI_VERSION}'
 assert_contains "$SCAFFOLD/.gitignore" "# pah:managed:start"
 assert_contains "$SCAFFOLD/.gitignore" "Personal-Agent-Harness/"
 "$PAH" verify "$SCAFFOLD"
