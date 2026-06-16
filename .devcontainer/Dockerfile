@@ -1,4 +1,4 @@
-# Harness maintainer devcontainer: Node 24 for npm publish + pinned AI CLIs.
+# Harness maintainer devcontainer: Node 24 for npm publish + pinned Codex CLI.
 # Target-project scaffold lives in templates/devcontainer/ (installed via pah).
 FROM mcr.microsoft.com/devcontainers/javascript-node:24-bookworm
 
@@ -9,16 +9,13 @@ RUN usermod -l vscode -d /home/vscode -m node \
     && find /etc/sudoers.d -type f -exec sed -i 's/\bnode\b/vscode/g' {} + 2>/dev/null || true
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates curl jq \
+    && apt-get install -y --no-install-recommends ca-certificates curl jq chromium \
     && rm -rf /var/lib/apt/lists/*
 
-ARG CLAUDE_CODE_VERSION
 ARG CODEX_CLI_VERSION
 
 RUN npm install -g \
-    "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" \
     "@openai/codex@${CODEX_CLI_VERSION}" \
-    && claude --version \
     && codex --version
 
 USER vscode

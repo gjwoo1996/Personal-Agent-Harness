@@ -6,6 +6,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 git config --global --add safe.directory "$PWD" || true
 
+mkdir -p /home/vscode/.ai-state/claude
+if [ -e /home/vscode/.claude.json ] && [ ! -L /home/vscode/.claude.json ]; then
+  cp /home/vscode/.claude.json /home/vscode/.ai-state/claude/.claude.json
+fi
+touch /home/vscode/.ai-state/claude/.claude.json
+ln -sfn /home/vscode/.ai-state/claude/.claude.json /home/vscode/.claude.json
+
 echo "User: $(whoami)"
 echo "Workspace: $PWD"
 
@@ -25,7 +32,7 @@ if command -v codex >/dev/null 2>&1; then
   codex --version
 fi
 
-"$SCRIPT_DIR/install-superpowers.sh"
+"$SCRIPT_DIR/ensure-ai-skills.sh"
 
 echo ""
 echo "Superpowers:"
@@ -40,6 +47,19 @@ if command -v codex >/dev/null 2>&1; then
   else
     echo "  WARN: Codex superpowers not installed"
   fi
+fi
+
+echo ""
+echo "gstack/browse:"
+if [ -d "${HOME}/.codex/gstack" ]; then
+  echo "  gstack: installed at ~/.codex/gstack"
+else
+  echo "  WARN: gstack not installed"
+fi
+if command -v chromium >/dev/null 2>&1; then
+  echo "  chromium: $(chromium --version 2>/dev/null || true)"
+else
+  echo "  WARN: chromium not available"
 fi
 
 echo ""

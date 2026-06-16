@@ -11,12 +11,12 @@
   "features": {
     "ghcr.io/devcontainers/features/github-cli:1": {
       "version": "2.93.0"
-    }
+    },
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {}
   },
   "customizations": {
     "vscode": {
       "extensions": [
-        "anthropic.claude-code",
         "openai.chatgpt"
       ]
     }

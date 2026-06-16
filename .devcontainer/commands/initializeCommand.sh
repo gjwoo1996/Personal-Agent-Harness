@@ -9,7 +9,6 @@ containerWorkspaceFolder="${2:-/home/vscode/$(basename "$REPO_ROOT")}"
 localWorkspaceFolderBasename="${3:-$(basename "$REPO_ROOT")}"
 containerWorkspaceFolderBasename="${4:-$(basename "$REPO_ROOT")}"
 
-CLAUDE_CODE_VERSION=2.1.169
 CODEX_CLI_VERSION=0.138.0
 if [ -f .env.example ]; then
   # shellcheck disable=SC1091
@@ -26,7 +25,6 @@ localWorkspaceFolderBasename=${localWorkspaceFolderBasename}
 containerWorkspaceFolderBasename=${containerWorkspaceFolderBasename}
 
 # Pinned AI CLI versions (update intentionally in .env.example)
-CLAUDE_CODE_VERSION=${CLAUDE_CODE_VERSION}
 CODEX_CLI_VERSION=${CODEX_CLI_VERSION}
 EOF
 

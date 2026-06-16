@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "Dev container started for ${PWD##*/}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+"$SCRIPT_DIR/ensure-ai-skills.sh"
+"$SCRIPT_DIR/init-firewall.sh"
