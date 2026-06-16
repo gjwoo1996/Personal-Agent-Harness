@@ -34,8 +34,8 @@ Use **Reopen in Container** from the command palette.
 
 ## First-time setup
 
-1. `initializeCommand.sh` writes `.devcontainer/.env` with workspace paths and pinned AI CLI versions.
-2. Rebuild the container if you change AI CLI versions in `.env`.
+1. `initializeCommand.sh` writes `.devcontainer/.env` with workspace paths and the pinned Codex CLI version.
+2. Rebuild the container if you change the Codex CLI version in `.env`.
 3. Run `npm login` inside the container before the first `npm publish`.
 
 ## GitHub CLI
@@ -51,9 +51,11 @@ gh auth status
 
 ## AI CLI versions
 
-Pinned in `.devcontainer/.env` (from `.env.example`):
+Claude Code is installed by the official devcontainer Feature
+`ghcr.io/anthropics/devcontainer-features/claude-code:1.0`.
 
-- `CLAUDE_CODE_VERSION`
+Codex CLI is pinned in `.devcontainer/.env` (from `.env.example`):
+
 - `CODEX_CLI_VERSION`
 
 Update intentionally after validating with `claude --version` / `codex --version` post-rebuild.
@@ -65,6 +67,7 @@ Claude Code and Codex CLI state persist across **Rebuild Container** via Docker 
 | Volume | Mount | Persists |
 |--------|-------|----------|
 | `pah-claude-config` | `/home/vscode/.claude` | Login, sessions, plugins |
+| `pah-claude-json` | `/home/vscode/.ai-state/claude` | Claude `.claude.json` file state |
 | `pah-codex-config` | `/home/vscode/.codex` | Login, sessions, plugins, `config.toml` |
 
 On first container create, named volumes may mount as `root`. `post-create.sh` runs `ensure-ai-volume-permissions.sh` before any AI CLI setup.
@@ -72,7 +75,7 @@ On first container create, named volumes may mount as `root`. `post-create.sh` r
 Reset all AI state (login + superpowers + sessions):
 
 ```bash
-docker volume rm pah-claude-config pah-codex-config
+docker volume rm pah-claude-config pah-claude-json pah-codex-config
 ```
 
 Then **Rebuild Container** to recreate empty volumes and rerun `post-create.sh`.
@@ -83,23 +86,29 @@ Fix permissions only (keep login/sessions):
 bash .devcontainer/commands/ensure-ai-volume-permissions.sh
 ```
 
-## Superpowers (Claude Code · Codex CLI)
+## AI skills (superpowers · gstack · browse)
 
-Installed automatically on container create by `.devcontainer/commands/install-superpowers.sh` (idempotent — skips if already present in the volume).
+Installed and repaired automatically by `.devcontainer/commands/ensure-ai-skills.sh`
+on container create and start. Defaults and optional repo refs live in
+`.devcontainer/versions.env`.
 
 | Tool | Source |
 |------|--------|
 | Claude Code | `superpowers@superpowers-marketplace` |
 | Codex CLI | Skills symlink (`~/.agents/skills/superpowers` → `~/.codex/superpowers/skills`); plugin `superpowers@openai-curated` when marketplace is ready |
+| gstack/browse | `GSTACK_REPO` cloned to `~/.codex/gstack`, configured for Claude and Codex with Bun |
 
 On first `post-create`, the Codex marketplace may not be initialized yet. The install script clones [obra/superpowers](https://github.com/obra/superpowers) into the `pah-codex-config` volume and symlinks skills (reliable). Plugin install is attempted when `openai-curated` is available.
 
 Codex subagent skills also enable `multi_agent = true` in `~/.codex/config.toml`.
 
+The browser health check uses `chromium` and warns without failing the whole
+container when browse is not healthy.
+
 Manual reinstall or update:
 
 ```bash
-bash .devcontainer/commands/install-superpowers.sh
+bash .devcontainer/commands/ensure-ai-skills.sh
 claude plugin update superpowers
 codex plugin marketplace upgrade openai-curated
 ```
@@ -110,7 +119,16 @@ Verify:
 claude plugin list | grep superpowers
 ls -la ~/.agents/skills/superpowers    # Codex skills symlink
 codex plugin list | grep superpowers   # optional plugin path
+test -d ~/.codex/gstack
 ```
+
+## Firewall
+
+`post-start.sh` runs `ensure-ai-skills.sh` first, then `init-firewall.sh`. The
+firewall is idempotent and allows loopback, established connections, DNS,
+GitHub, npm, Anthropic, OpenAI, Bun, and Playwright/Chromium download endpoints.
+If `iptables` or `ipset` is unavailable, it prints `WARN:` and leaves networking
+unchanged.
 
 ## npm credentials
 
@@ -131,9 +149,10 @@ Do not commit real tokens. Do not use host mounts on shared machines.
 |------|-------------------|----------------------------------|
 | Audience | Harness maintainers | Applied projects |
 | Distributed via npm | No | Yes (`pah install`) |
-| AI CLIs | Included (pinned) | Included (pinned) |
-| AI state volumes | Named volumes (`pah-claude-config`, `pah-codex-config`) | Project chooses per standard |
-| Superpowers | Auto-installed in `post-create.sh` | Not included by default |
+| AI CLIs | Claude Feature + pinned Codex | Claude Feature + pinned Codex |
+| AI state volumes | Named volumes (`pah-claude-config`, `pah-claude-json`, `pah-codex-config`) | Project chooses per standard |
+| Superpowers/gstack | Auto-repaired in `post-create.sh` and `post-start.sh` | Not included by default |
+| Firewall | Default-on after AI setup | Opt-in example only |
 
 ## Troubleshooting
 
@@ -142,6 +161,7 @@ Do not commit real tokens. Do not use host mounts on shared machines.
 | `EACCES: permission denied, mkdir '/home/vscode/.claude/plugins'` | Named volume mounted as `root` on first create | Run `bash .devcontainer/commands/ensure-ai-volume-permissions.sh` or Rebuild Container |
 | `invalid spec: ..::cached` | `containerWorkspaceFolder` missing in `.devcontainer/.env` | Reopen in Container (runs `initializeCommand`) or run `bash .devcontainer/commands/initializeCommand.sh` manually |
 | `javascript-node:1-24-bookworm: not found` | Wrong image tag (legacy `1-24` prefix) | Use `24-bookworm` (see Dockerfile) |
+| gstack or browse missing | Bun, clone, or browser setup failed temporarily | Run `bash .devcontainer/commands/ensure-ai-skills.sh` |
 
 ## Verification
 
@@ -153,6 +173,7 @@ node --version            # v24.x
 gh --version              # 2.93.0
 claude plugin list | grep superpowers
 codex plugin list | grep superpowers
+bash .devcontainer/commands/ensure-ai-skills.sh
 bash tests/test_pah.sh
 npm pack
 ```

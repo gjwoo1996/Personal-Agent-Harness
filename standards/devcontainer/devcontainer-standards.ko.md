@@ -26,7 +26,7 @@ Composer의 실무 개발자 경험을 기본 구조로 삼고, Codex의 재현�
 - 처음에는 `workspace` 서비스만 있더라도 Docker Compose로 시작합니다.
 - 기본 사용자와 워크스페이스 경로는 `vscode`와 `/home/vscode/${localWorkspaceFolderBasename}`를 사용합니다.
 - 언어 런타임은 devcontainer features를 우선 사용합니다.
-- AI CLI는 Dockerfile에서 명시적으로 고정된 버전으로 설치합니다.
+- AI CLI는 공식 devcontainer Feature가 있으면 Feature를 사용하고, 없으면 Dockerfile에서 고정된 버전으로 설치합니다.
 - AI 상태 저장 방식은 하나로 고정하지 않고 아래 결정 트리에 따라 선택합니다.
 - 장기 규칙은 AI별 진입 파일에 중복하지 않고 영문 원본 문서에 둡니다.
 
@@ -120,32 +120,40 @@ FROM mcr.microsoft.com/devcontainers/base:ubuntu
 - devcontainer feature 버전
 - 언어 런타임
 - 데이터베이스와 sidecar 이미지
-- `CLAUDE_CODE_VERSION`
 - `CODEX_CLI_VERSION`
 
 버전 업데이트는 의도적인 변경으로 처리하고, 리빌드와 smoke test 결과를 함께 확인합니다.
 
+Claude Code는 기본적으로 공식 Feature의 업데이트 채널을 따릅니다. 프로젝트가 npm으로
+고정된 Claude Code 설치를 선택한다면 Claude autoupdater를 비활성화하고 예외 사유를
+문서화해야 합니다.
+
 ## AI CLI 설치
 
-Claude Code와 Codex CLI는 `postCreateCommand`가 아니라 이미지 빌드 중에 설치합니다.
+AI CLI는 `postCreateCommand`가 아니라 이미지 빌드 중 또는 devcontainer Feature로 설치합니다.
 
 규칙:
 
-- AI CLI 버전은 Dockerfile build arg로 받습니다.
-- 해당 버전은 검증된 값으로 고정합니다.
+- Claude Code는 기본적으로 공식 devcontainer Feature를 사용합니다.
+- Codex CLI는 기본적으로 Dockerfile에서 `CODEX_CLI_VERSION`으로 설치합니다.
+- Dockerfile에서 설치하는 AI CLI 버전은 Dockerfile build arg로 받습니다.
+- Dockerfile에서 설치하는 버전은 검증된 값으로 고정합니다.
 - 빌드 또는 `post-create.sh`에서 CLI 버전을 출력하거나 검증합니다.
 - 같은 AI CLI를 devcontainer feature와 Dockerfile 양쪽에서 중복 설치하지 않습니다.
 
 예시 의도:
 
 ```dockerfile
-ARG CLAUDE_CODE_VERSION
 ARG CODEX_CLI_VERSION
 RUN npm install -g \
-    "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" \
     "@openai/codex@${CODEX_CLI_VERSION}" \
-    && claude --version \
     && codex --version
+```
+
+```json
+"features": {
+  "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {}
+}
 ```
 
 ## AI 상태 저장 결정 트리
@@ -215,6 +223,7 @@ OCI 또는 SSH 파일처럼 실제로 필요한 외부 인증 파일은 readonly
 - 선택 사항입니다.
 - 가볍게 유지합니다.
 - 빠른 권한 확인이나 상태 힌트 정도에만 사용합니다.
+- AI 상태가 named volume으로 보존되는 경우 가볍고 멱등적인 AI skill 복구를 실행할 수 있습니다.
 
 다음처럼 파괴적이거나 상태를 바꾸는 앱 작업은 자동 실행하지 않습니다.
 
@@ -222,6 +231,22 @@ OCI 또는 SSH 파일처럼 실제로 필요한 외부 인증 파일은 readonly
 - 기본 seed data 삽입 금지
 - 장기 실행 앱 서버 자동 시작 금지
 - 실패를 숨기는 best-effort 처리 금지
+
+## AI Skill 설정 (superpowers / gstack)
+
+배포 템플릿은 AI skill 설정 방법을 문서화하되, 대상 프로젝트가 명시적으로 선택하지 않는 한
+skill을 자동 설치하지 않습니다.
+
+프로젝트가 opt-in하는 경우 다음 원칙을 따릅니다.
+
+- host path 없이 rebuild 후에도 유지해야 한다면 AI 상태를 named volume에 저장합니다.
+- 누락된 symlink나 plugin 상태가 복구되도록 `post-start.sh`에서 멱등적으로 skill을 점검합니다.
+- skill 저장소에는 선택적 ref pin을 지원합니다.
+- CLI 부재, 일시적인 marketplace 실패, 브라우저 health 실패는 경고 후 계속 진행합니다.
+- shell 문법 오류, 로컬 스크립트 누락, 권한 복구 실패는 즉시 실패시킵니다.
+
+superpowers와 gstack/browse 설정의 기준 구현은 maintainer용
+`.devcontainer/commands/ensure-ai-skills.sh`입니다.
 
 ## 포트와 VS Code 확장
 

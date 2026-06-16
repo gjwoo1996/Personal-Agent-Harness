@@ -25,7 +25,7 @@ In practice:
 - Start from Docker Compose, even when the first version has only a `workspace` service.
 - Use `vscode` and `/home/vscode/${localWorkspaceFolderBasename}` as the default identity and workspace path.
 - Install language runtimes with devcontainer features first.
-- Install AI CLIs in the Dockerfile, with explicit pinned versions.
+- Use official devcontainer Features for AI CLIs when available; otherwise install pinned CLIs in the Dockerfile.
 - Decide AI state storage with the decision tree below instead of using one universal mount strategy.
 - Keep long-lived rules in this document, not duplicated across AI-specific entry files.
 
@@ -119,32 +119,40 @@ Pin:
 - Devcontainer feature versions
 - Language runtimes
 - Database and sidecar images
-- `CLAUDE_CODE_VERSION`
 - `CODEX_CLI_VERSION`
 
 Version updates should be intentional changes with a rebuild and smoke-test result.
 
+Claude Code defaults to the official Feature's update channel. If a project chooses
+an npm-pinned Claude Code install instead, it must disable Claude's autoupdater and
+document why the exception is needed.
+
 ## AI CLI Installation
 
-Install Claude Code and Codex CLI during image build, not in `postCreateCommand`.
+Install AI CLIs during image build or through devcontainer Features, not in `postCreateCommand`.
 
 Rules:
 
-- Use Dockerfile build args for AI CLI versions.
-- Pin those versions to validated values.
+- Use the official Claude Code devcontainer Feature by default.
+- Install Codex CLI in the Dockerfile with `CODEX_CLI_VERSION` by default.
+- Use Dockerfile build args for AI CLI versions installed in the Dockerfile.
+- Pin those Dockerfile-installed versions to validated values.
 - Print or verify CLI versions during build or `post-create.sh`.
 - Do not install the same AI CLI through both a devcontainer feature and the Dockerfile.
 
 Example intent:
 
 ```dockerfile
-ARG CLAUDE_CODE_VERSION
 ARG CODEX_CLI_VERSION
 RUN npm install -g \
-    "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" \
     "@openai/codex@${CODEX_CLI_VERSION}" \
-    && claude --version \
     && codex --version
+```
+
+```json
+"features": {
+  "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {}
+}
 ```
 
 ## AI State Storage Decision Tree
@@ -214,6 +222,7 @@ Use `.devcontainer/commands/` only.
 - Optional.
 - Keep it lightweight.
 - Use it only for quick permission checks or health hints.
+- May run lightweight, idempotent AI skill repair when AI state is backed by named volumes.
 
 Do not run destructive or state-changing app operations automatically:
 
@@ -221,6 +230,22 @@ Do not run destructive or state-changing app operations automatically:
 - No seed data by default.
 - No long-running app servers by default.
 - No hidden best-effort failure swallowing.
+
+## AI Skill Setup (superpowers / gstack)
+
+Distributed templates should document AI skill setup, but should not automatically
+install skills unless the target project explicitly opts in.
+
+When a project opts in, use these principles:
+
+- Store AI state in named volumes when the setup should survive rebuilds without host paths.
+- Repair skills idempotently in `post-start.sh` so missing symlinks or plugin state recover.
+- Support optional repository ref pins for skill repositories.
+- Degrade gracefully for missing CLIs, temporary marketplace failures, and browser health failures.
+- Fail fast for broken shell syntax, missing local script files, and permission repair failures.
+
+The maintainer implementation at `.devcontainer/commands/ensure-ai-skills.sh` is the
+reference pattern for superpowers and gstack/browse setup.
 
 ## Ports And VS Code Extensions
 
