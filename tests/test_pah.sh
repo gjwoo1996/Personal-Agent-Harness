@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 PAH="$ROOT/bin/pah"
 HARNESS_VERSION="$(tr -d '\r\n' < "$ROOT/VERSION")"
+PACKAGE_VERSION="$(node -e 'process.stdout.write(require(process.argv[1]).version)' "$ROOT/package.json")"
 TMP_ROOT="$(mktemp -d)"
 trap 'rm -rf "$TMP_ROOT"' EXIT
 
@@ -68,6 +69,54 @@ assert_dir_count() {
   actual="$(find "$dir" -mindepth 1 -maxdepth 1 -type d | wc -l)"
   [ "$actual" = "$expected" ] || fail "expected $expected directories in $dir, found $actual"
 }
+
+[ "$HARNESS_VERSION" = "$PACKAGE_VERSION" ] \
+  || fail "VERSION ($HARNESS_VERSION) must match package.json.version ($PACKAGE_VERSION)"
+
+if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+  containerWorkspaceFolder=/workspaces/pah-maintainer-test \
+    CODEX_CLI_VERSION=0.139.0 \
+    docker compose -f "$ROOT/.devcontainer/docker-compose.dev.yml" config \
+      > "$TMP_ROOT/maintainer-compose.log"
+  assert_contains "$TMP_ROOT/maintainer-compose.log" "name: pah-claude-config"
+  assert_contains "$TMP_ROOT/maintainer-compose.log" "name: pah-claude-json"
+  assert_contains "$TMP_ROOT/maintainer-compose.log" "name: pah-codex-config"
+  assert_contains "$TMP_ROOT/maintainer-compose.log" "name: pah-cursor-skills"
+  assert_contains "$TMP_ROOT/maintainer-compose.log" "name: pah-cursor-plugins"
+  assert_contains "$TMP_ROOT/maintainer-compose.log" "name: pah-bun-home"
+  assert_contains "$TMP_ROOT/maintainer-compose.log" "name: pah-gh-config"
+  assert_contains "$ROOT/.devcontainer/docker-compose.dev.yml" "create_host_path: false"
+fi
+
+AI_SKILLS_HOME="$TMP_ROOT/ai-skills-home"
+AI_SKILLS_BIN="$TMP_ROOT/ai-skills-bin"
+mkdir -p \
+  "$AI_SKILLS_HOME/.codex/superpowers/skills/using-superpowers" \
+  "$AI_SKILLS_HOME/.agents/skills/superpowers" \
+  "$AI_SKILLS_HOME/.bun/bin" \
+  "$AI_SKILLS_BIN"
+cat > "$AI_SKILLS_HOME/.bun/bin/bun" <<'EOM'
+#!/usr/bin/env bash
+if [ "${1:-}" = "--version" ]; then
+  printf '1.2.17\n'
+fi
+EOM
+cat > "$AI_SKILLS_BIN/curl" <<'EOM'
+#!/usr/bin/env bash
+exit 1
+EOM
+cat > "$AI_SKILLS_BIN/git" <<'EOM'
+#!/usr/bin/env bash
+exit 1
+EOM
+chmod +x "$AI_SKILLS_HOME/.bun/bin/bun" "$AI_SKILLS_BIN/curl" "$AI_SKILLS_BIN/git"
+if ! HOME="$AI_SKILLS_HOME" PATH="$AI_SKILLS_BIN:/usr/bin:/bin" \
+  bash "$ROOT/.devcontainer/commands/ensure-ai-skills.sh" \
+    > "$TMP_ROOT/ai-skills.log" 2>&1; then
+  fail "AI skill setup should warn and continue when gstack repository is unavailable"
+fi
+assert_contains "$TMP_ROOT/ai-skills.log" "Bun: already installed (1.2.17)"
+assert_contains "$TMP_ROOT/ai-skills.log" "WARN: gstack repository unavailable; skipping gstack setup"
 
 TARGET="$TMP_ROOT/project"
 mkdir -p "$TARGET"
@@ -143,32 +192,83 @@ assert_file "$SCAFFOLD/.devcontainer/docker-compose.dev.yml"
 assert_file "$SCAFFOLD/.devcontainer/Dockerfile"
 assert_file "$SCAFFOLD/.devcontainer/commands/initializeCommand.sh"
 assert_file "$SCAFFOLD/.devcontainer/commands/post-create.sh"
+assert_file "$SCAFFOLD/.devcontainer/commands/post-start.sh"
+assert_file "$SCAFFOLD/.devcontainer/commands/ensure-ai-volume-permissions.sh"
+assert_file "$SCAFFOLD/.devcontainer/commands/ensure-git-auth.sh"
 assert_file "$SCAFFOLD/.devcontainer/commands/init-firewall.sh"
 assert_file "$SCAFFOLD/.devcontainer/README.md"
 assert_contains "$SCAFFOLD/.devcontainer/devcontainer.json" 'ghcr.io/anthropics/devcontainer-features/claude-code:1.0'
 assert_not_contains "$SCAFFOLD/.devcontainer/devcontainer.json" 'anthropic.claude-code'
+assert_contains "$SCAFFOLD/.devcontainer/devcontainer.json" '"postStartCommand": ".devcontainer/commands/post-start.sh"'
 assert_contains "$SCAFFOLD/.devcontainer/docker-compose.dev.yml" 'claude-config:/home/vscode/.claude'
 assert_contains "$SCAFFOLD/.devcontainer/docker-compose.dev.yml" 'claude-json:/home/vscode/.ai-state/claude'
 assert_contains "$SCAFFOLD/.devcontainer/docker-compose.dev.yml" 'codex-config:/home/vscode/.codex'
+assert_contains "$SCAFFOLD/.devcontainer/docker-compose.dev.yml" 'cursor-skills:/home/vscode/.cursor/skills'
+assert_contains "$SCAFFOLD/.devcontainer/docker-compose.dev.yml" 'cursor-plugins:/home/vscode/.cursor/plugins'
+assert_contains "$SCAFFOLD/.devcontainer/docker-compose.dev.yml" 'bun-home:/home/vscode/.bun'
+assert_contains "$SCAFFOLD/.devcontainer/docker-compose.dev.yml" 'gh-config:/home/vscode/.config/gh'
 assert_not_contains "$SCAFFOLD/.devcontainer/docker-compose.dev.yml" 'CLAUDE_CODE_VERSION'
 assert_contains "$SCAFFOLD/.devcontainer/docker-compose.dev.yml" 'name: ${aiStateVolumePrefix}-claude-config'
 assert_contains "$SCAFFOLD/.devcontainer/docker-compose.dev.yml" 'name: ${aiStateVolumePrefix}-claude-json'
 assert_contains "$SCAFFOLD/.devcontainer/docker-compose.dev.yml" 'name: ${aiStateVolumePrefix}-codex-config'
+assert_contains "$SCAFFOLD/.devcontainer/docker-compose.dev.yml" 'name: ${aiStateVolumePrefix}-cursor-skills'
+assert_contains "$SCAFFOLD/.devcontainer/docker-compose.dev.yml" 'name: ${aiStateVolumePrefix}-cursor-plugins'
+assert_contains "$SCAFFOLD/.devcontainer/docker-compose.dev.yml" 'name: ${aiStateVolumePrefix}-bun-home'
+assert_contains "$SCAFFOLD/.devcontainer/docker-compose.dev.yml" 'name: ${aiStateVolumePrefix}-gh-config'
 assert_not_contains "$SCAFFOLD/.devcontainer/docker-compose.dev.yml" '${devcontainerId}'
+assert_contains "$SCAFFOLD/.devcontainer/docker-compose.dev.yml" '#     create_host_path: false'
+if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+  containerWorkspaceFolder=/workspaces/pah-test \
+    aiStateVolumePrefix=pah-test-ai-state \
+    CODEX_CLI_VERSION=0.139.0 \
+    docker compose -f "$SCAFFOLD/.devcontainer/docker-compose.dev.yml" config \
+      > "$TMP_ROOT/scaffold-compose.log"
+fi
 assert_contains "$SCAFFOLD/.devcontainer/commands/initializeCommand.sh" 'aiStateVolumePrefix='
 assert_not_contains "$SCAFFOLD/.devcontainer/commands/initializeCommand.sh" 'CLAUDE_CODE_VERSION'
 assert_contains "$SCAFFOLD/.devcontainer/commands/post-create.sh" 'ln -sfn /home/vscode/.ai-state/claude/.claude.json /home/vscode/.claude.json'
+assert_contains "$SCAFFOLD/.devcontainer/Dockerfile" '/home/vscode/.cursor/skills'
+assert_contains "$SCAFFOLD/.devcontainer/Dockerfile" '/home/vscode/.cursor/plugins'
+assert_contains "$ROOT/.devcontainer/Dockerfile" 'ENV BUN_INSTALL=/home/vscode/.bun'
+assert_contains "$ROOT/.devcontainer/Dockerfile" 'ENV PATH=${BUN_INSTALL}/bin:${PATH}'
+assert_contains "$ROOT/.devcontainer/Dockerfile" '/etc/profile.d/pah-bun.sh'
+assert_contains "$SCAFFOLD/.devcontainer/Dockerfile" 'ENV BUN_INSTALL=/home/vscode/.bun'
+assert_contains "$SCAFFOLD/.devcontainer/Dockerfile" 'ENV PATH=${BUN_INSTALL}/bin:${PATH}'
+assert_contains "$SCAFFOLD/.devcontainer/Dockerfile" '/etc/profile.d/pah-bun.sh'
 assert_contains "$SCAFFOLD/.devcontainer/README.md" 'AI State Storage'
 assert_contains "$SCAFFOLD/.devcontainer/README.md" 'Docker named volumes'
 assert_contains "$SCAFFOLD/.devcontainer/README.md" '/home/vscode/.claude'
 assert_contains "$SCAFFOLD/.devcontainer/README.md" '/home/vscode/.claude.json'
 assert_contains "$SCAFFOLD/.devcontainer/README.md" '/home/vscode/.codex'
+assert_contains "$SCAFFOLD/.devcontainer/README.md" '/home/vscode/.cursor/skills'
+assert_contains "$SCAFFOLD/.devcontainer/README.md" '/home/vscode/.cursor/plugins'
+assert_contains "$SCAFFOLD/.devcontainer/README.md" '/home/vscode/.bun'
+assert_contains "$SCAFFOLD/.devcontainer/README.md" '/home/vscode/.config/gh'
 assert_contains "$SCAFFOLD/.devcontainer/README.md" 'docker volume rm'
 assert_not_contains "$SCAFFOLD/.devcontainer/.env.example" 'CLAUDE_CODE_VERSION'
 assert_contains "$SCAFFOLD/.devcontainer/.env.example" 'CODEX_CLI_VERSION=0.139.0'
 assert_not_contains "$SCAFFOLD/.devcontainer/Dockerfile" '@anthropic-ai/claude-code'
 assert_not_contains "$SCAFFOLD/.devcontainer/Dockerfile" 'CLAUDE_CODE_VERSION'
 assert_contains "$SCAFFOLD/.devcontainer/Dockerfile" '@openai/codex@${CODEX_CLI_VERSION}'
+
+SCAFFOLD_HOME="$TMP_ROOT/scaffold-home"
+mkdir -p "$SCAFFOLD_HOME"
+HOME="$SCAFFOLD_HOME" bash "$SCAFFOLD/.devcontainer/commands/ensure-ai-volume-permissions.sh"
+[ -d "$SCAFFOLD_HOME/.claude" ] || fail "expected permissions helper to create .claude"
+[ -d "$SCAFFOLD_HOME/.ai-state" ] || fail "expected permissions helper to create .ai-state"
+[ -d "$SCAFFOLD_HOME/.codex" ] || fail "expected permissions helper to create .codex"
+[ -d "$SCAFFOLD_HOME/.cursor/skills" ] || fail "expected permissions helper to create .cursor/skills"
+[ -d "$SCAFFOLD_HOME/.cursor/plugins" ] || fail "expected permissions helper to create .cursor/plugins"
+[ -d "$SCAFFOLD_HOME/.bun" ] || fail "expected permissions helper to create .bun"
+[ -d "$SCAFFOLD_HOME/.config/gh" ] || fail "expected permissions helper to create .config/gh"
+
+HOME="$SCAFFOLD_HOME" bash "$SCAFFOLD/.devcontainer/commands/ensure-git-auth.sh"
+HOME="$SCAFFOLD_HOME" bash "$SCAFFOLD/.devcontainer/commands/ensure-git-auth.sh"
+GITHUB_HELPER="$(git config --file "$SCAFFOLD_HOME/.config/git/config" --get credential.https://github.com.helper)"
+GIST_HELPER="$(git config --file "$SCAFFOLD_HOME/.config/git/config" --get credential.https://gist.github.com.helper)"
+[ "$GITHUB_HELPER" = "!gh auth git-credential" ] || fail "unexpected GitHub credential helper: $GITHUB_HELPER"
+[ "$GIST_HELPER" = "!gh auth git-credential" ] || fail "unexpected Gist credential helper: $GIST_HELPER"
+
 assert_contains "$SCAFFOLD/.gitignore" "# pah:managed:start"
 assert_contains "$SCAFFOLD/.gitignore" "Personal-Agent-Harness/"
 "$PAH" verify "$SCAFFOLD"
@@ -241,36 +341,44 @@ UPDATE_HARNESS="$TMP_ROOT/update-harness-root"
 cp -a "$ROOT" "$UPDATE_HARNESS"
 UPDATE_MARKER="pah-init-update-marker-$$"
 echo "$UPDATE_MARKER" >> "$UPDATE_HARNESS/standards/devcontainer/devcontainer-standards.md"
-PAH_DISTRIBUTION=npm "$UPDATE_HARNESS/bin/pah" update "$UPDATE_PROJECT"
+PACKAGE_UPDATE_LOG="$TMP_ROOT/package-update.log"
+PAH_DISTRIBUTION=package "$UPDATE_HARNESS/bin/pah" update "$UPDATE_PROJECT" > "$PACKAGE_UPDATE_LOG"
 assert_contains "$UPDATE_PROJECT/docs/devcontainer/devcontainer-standards.md" "$UPDATE_MARKER"
+assert_contains "$PACKAGE_UPDATE_LOG" "update command: npx --yes github:gjwoo1996/Personal-Agent-Harness update $UPDATE_PROJECT"
 "$PAH" verify "$UPDATE_PROJECT"
 
-NPM_ROOT="$TMP_ROOT/npm-package"
-mkdir -p "$NPM_ROOT"
-cp -a "$ROOT/bin" "$ROOT/config" "$ROOT/standards" "$ROOT/templates" "$NPM_ROOT/"
-cp -a "$ROOT/bootstrap.sh" "$ROOT/setup.sh" "$ROOT/update.sh" "$ROOT/VERSION" "$NPM_ROOT/"
-assert_file "$NPM_ROOT/bin/pah"
-assert_file "$NPM_ROOT/bin/pah-entry"
-assert_file "$NPM_ROOT/setup.sh"
-assert_file "$NPM_ROOT/update.sh"
-assert_file "$NPM_ROOT/bootstrap.sh"
-assert_file "$NPM_ROOT/standards/devcontainer/devcontainer-standards.md"
-assert_not_dir "$NPM_ROOT/dev-docs"
-NPM_TARGET="$TMP_ROOT/npm-target"
-mkdir -p "$NPM_TARGET"
-PAH_DISTRIBUTION=npm "$NPM_ROOT/bin/pah-entry" init "$NPM_TARGET"
-assert_file "$NPM_TARGET/.harness/manifest.json"
-assert_not_dir "$NPM_TARGET/Personal-Agent-Harness"
+PACKAGE_LAYOUT="$TMP_ROOT/package-layout"
+PACKAGE_TARBALL="$(cd "$ROOT" && npm pack --pack-destination "$TMP_ROOT" --silent)"
+mkdir -p "$PACKAGE_LAYOUT"
+tar -xzf "$TMP_ROOT/$PACKAGE_TARBALL" -C "$PACKAGE_LAYOUT"
+PACKAGE_ROOT="$PACKAGE_LAYOUT/package"
+assert_file "$PACKAGE_ROOT/bin/pah"
+assert_file "$PACKAGE_ROOT/bin/pah-entry"
+assert_file "$PACKAGE_ROOT/package.json"
+assert_file "$PACKAGE_ROOT/setup.sh"
+assert_file "$PACKAGE_ROOT/update.sh"
+assert_file "$PACKAGE_ROOT/bootstrap.sh"
+assert_file "$PACKAGE_ROOT/standards/devcontainer/devcontainer-standards.md"
+assert_not_dir "$PACKAGE_ROOT/dev-docs"
+PACKAGE_TARGET="$TMP_ROOT/package-target"
+PACKAGE_ENTRY_LOG="$TMP_ROOT/package-entry.log"
+mkdir -p "$PACKAGE_TARGET"
+"$PACKAGE_ROOT/bin/pah-entry" init "$PACKAGE_TARGET" > "$PACKAGE_ENTRY_LOG"
+assert_file "$PACKAGE_TARGET/.harness/manifest.json"
+assert_not_dir "$PACKAGE_TARGET/Personal-Agent-Harness"
+assert_contains "$PACKAGE_ENTRY_LOG" "update command: npx --yes github:gjwoo1996/Personal-Agent-Harness update $PACKAGE_TARGET"
 
-NPM_BIN_ROOT="$TMP_ROOT/npm-bin"
-mkdir -p "$NPM_BIN_ROOT/node_modules/personal-agent-harness" "$NPM_BIN_ROOT/node_modules/.bin"
-cp -a "$NPM_ROOT/." "$NPM_BIN_ROOT/node_modules/personal-agent-harness/"
-ln -s ../personal-agent-harness/bin/pah-entry "$NPM_BIN_ROOT/node_modules/.bin/pah"
-NPM_BIN_TARGET="$TMP_ROOT/npm-bin-target"
-mkdir -p "$NPM_BIN_TARGET"
-"$NPM_BIN_ROOT/node_modules/.bin/pah" init "$NPM_BIN_TARGET"
-assert_file "$NPM_BIN_TARGET/.harness/manifest.json"
-assert_not_dir "$NPM_BIN_TARGET/Personal-Agent-Harness"
+PACKAGE_BIN_ROOT="$TMP_ROOT/package-bin"
+mkdir -p "$PACKAGE_BIN_ROOT/node_modules/personal-agent-harness" "$PACKAGE_BIN_ROOT/node_modules/.bin"
+cp -a "$PACKAGE_ROOT/." "$PACKAGE_BIN_ROOT/node_modules/personal-agent-harness/"
+ln -s ../personal-agent-harness/bin/pah-entry "$PACKAGE_BIN_ROOT/node_modules/.bin/pah"
+PACKAGE_BIN_TARGET="$TMP_ROOT/package-bin-target"
+PACKAGE_BIN_LOG="$TMP_ROOT/package-bin.log"
+mkdir -p "$PACKAGE_BIN_TARGET"
+"$PACKAGE_BIN_ROOT/node_modules/.bin/pah" init "$PACKAGE_BIN_TARGET" > "$PACKAGE_BIN_LOG"
+assert_file "$PACKAGE_BIN_TARGET/.harness/manifest.json"
+assert_not_dir "$PACKAGE_BIN_TARGET/Personal-Agent-Harness"
+assert_contains "$PACKAGE_BIN_LOG" "update command: npx --yes github:gjwoo1996/Personal-Agent-Harness update $PACKAGE_BIN_TARGET"
 
 HARNESS_DEV="$TMP_ROOT/harness-dev"
 mkdir -p "$HARNESS_DEV"
@@ -504,6 +612,10 @@ printf '0.1.0\n' > "$OLD_VERSION_ROOT/VERSION"
 STATUS_COMPARE_LOG="$TMP_ROOT/status-compare.log"
 "$PAH" status "$STATUS_TARGET" --harness-root "$OLD_VERSION_ROOT" > "$STATUS_COMPARE_LOG"
 assert_contains "$STATUS_COMPARE_LOG" "update available"
+
+PACKAGE_STATUS_LOG="$TMP_ROOT/package-status.log"
+PAH_DISTRIBUTION=package "$PAH" status "$STATUS_TARGET" --harness-root "$OLD_VERSION_ROOT" > "$PACKAGE_STATUS_LOG"
+assert_contains "$PACKAGE_STATUS_LOG" "update command: npx --yes github:gjwoo1996/Personal-Agent-Harness update $STATUS_TARGET"
 
 STATUS_CURRENT_LOG="$TMP_ROOT/status-current.log"
 "$PAH" status "$STATUS_TARGET" > "$STATUS_CURRENT_LOG"
