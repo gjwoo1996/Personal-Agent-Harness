@@ -12,5 +12,5 @@ while [ -L "$SOURCE" ]; do
 done
 
 ROOT="$(cd "$(dirname "$SOURCE")/.." && pwd -P)"
-export PAH_DISTRIBUTION=npm
+export PAH_DISTRIBUTION=package
 exec "$ROOT/bin/pah" "$@"

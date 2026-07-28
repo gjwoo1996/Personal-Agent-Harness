@@ -729,8 +729,8 @@ warn_nested_harness() {
 
 update_command_hint() {
   local target="$1"
-  if [ "${PAH_DISTRIBUTION:-}" = "npm" ]; then
-    log "update command: npx personal-agent-harness@latest update $target"
+  if [ "${PAH_DISTRIBUTION:-}" = "package" ]; then
+    log "update command: npx --yes github:gjwoo1996/Personal-Agent-Harness update $target"
   else
     log "update command: $ROOT/update.sh $target"
   fi
@@ -843,8 +843,8 @@ cmd_status() {
   log "cli version: $available_version"
   if [ "$installed_version" != "$available_version" ]; then
     log "update available: installed $installed_version, cli $available_version"
-    if [ "${PAH_DISTRIBUTION:-}" = "npm" ]; then
-      log "update command: npx personal-agent-harness@latest update $target"
+    if [ "${PAH_DISTRIBUTION:-}" = "package" ]; then
+      log "update command: npx --yes github:gjwoo1996/Personal-Agent-Harness update $target"
     elif [ -n "$harness_root" ]; then
       log "update command: $compare_root/update.sh $target"
     else

@@ -1,7 +1,7 @@
 {
   "name": "personal-agent-harness",
   "version": "0.3.2",
-  "description": "Personal dev standards and AI agent rules installer (copy mode)",
+  "description": "Personal dev standards and AI agent rules installer (copy mode, GitHub distribution)",
   "license": "MIT",
   "repository": {
     "type": "git",
