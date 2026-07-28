@@ -1,5 +1,11 @@
 # 05. npm 배포 가이드
 
+> **폐기됨(archived, 2026-07-28):** npm registry publish 절차는 더 이상 사용하지 않습니다.
+> 현재 릴리스와 사용 절차는 [Git 전용 배포 전환 로드맵](../git-distribution/2026-07-28-git-only-distribution-roadmap.md)과
+> [하네스 개발·테스트](../internal/development.md)를 따릅니다. 아래 내용은 과거 이력으로만 보존합니다.
+>
+> **Phase 5 blocked (2026-07-28): npm login required.** `npm whoami`가 `ENEEDAUTH`로 실패해 기존 버전 deprecate는 아직 실행하지 않았습니다.
+
 ## 사전 준비 (완료된 항목)
 
 | 항목 | 상태 |

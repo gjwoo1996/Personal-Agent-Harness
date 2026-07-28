@@ -18,41 +18,55 @@
 
 대상 프로젝트가 git 저장소일 필요는 없지만, 생성된 파일을 검토하기 쉽도록 git 저장소 사용을 권장합니다.
 
-## 권장 워크플로우 (npm/npx)
+## 권장 워크플로우 (GitHub `npx`)
 
 ```bash
 # 1) 대상 프로젝트에 적용
-npx personal-agent-harness init .
+npx --yes github:gjwoo1996/Personal-Agent-Harness init .
 
 # 2) 업데이트
-npx personal-agent-harness@latest update .
+npx --yes github:gjwoo1996/Personal-Agent-Harness update .
 
 # 3) 검증·버전 확인
-npx personal-agent-harness verify .
-npx personal-agent-harness status .
+npx --yes github:gjwoo1996/Personal-Agent-Harness verify .
+npx --yes github:gjwoo1996/Personal-Agent-Harness status .
 ```
 
 `init`은 기본 `rules`와 hooks를 설치하고 verify를 실행합니다. 프로젝트 안에 `Personal-Agent-Harness/` 폴더를 만들지 않습니다.
 
-자주 쓰면 글로벌 설치:
+릴리스 단위로 재현 가능하게 실행하려면 태그를 고정합니다.
 
 ```bash
-npm install -g personal-agent-harness
-pah init /path/to/my-project
-pah update /path/to/my-project
+npx --yes github:gjwoo1996/Personal-Agent-Harness#vX.Y.Z update .
+```
+
+프로젝트 의존성으로 고정할 수도 있습니다.
+
+```json
+{
+  "devDependencies": {
+    "personal-agent-harness": "github:gjwoo1996/Personal-Agent-Harness#vX.Y.Z"
+  }
+}
+```
+
+```bash
+npm install
+npx pah init .
+npx pah update .
 ```
 
 ## 업데이트
 
 ```bash
-npx personal-agent-harness@latest update .
+npx --yes github:gjwoo1996/Personal-Agent-Harness update .
 ```
 
-npm 배포본은 `git pull` 없이 새 패키지 버전으로 install, verify를 실행합니다. 관리 파일은 `.harness/backups/<timestamp>/`에 백업됩니다.
+GitHub에서 받은 패키지는 `git pull` 없이 install, verify를 실행합니다. 관리 파일은 `.harness/backups/<timestamp>/`에 백업됩니다.
 
-## git checkout 워크플로우 (하네스 개발·legacy)
+## 로컬 git checkout 워크플로우 (하네스 개발·오프라인)
 
-이 섹션은 하네스 자체를 수정하거나 npm 없이 써야 할 때만 사용합니다. 일반 대상 프로젝트 적용은 위의 npm/npx 워크플로우를 사용합니다.
+이 섹션은 하네스 자체를 수정하거나 네트워크 없이 써야 할 때만 사용합니다. 일반 대상 프로젝트 적용은 위의 GitHub `npx` 워크플로우를 사용합니다.
 
 ```bash
 git clone <your-repo-url> ~/.local/share/personal-agent-harness
@@ -75,7 +89,7 @@ copy mode이므로 규칙 파일은 대상 프로젝트에 복사됩니다. 하�
 예전 방식(프로젝트 안에 clone)을 쓰고 있다면 외부 PAH_HOME으로 옮긴 뒤 중첩 폴더를 제거합니다.
 
 ```bash
-npx personal-agent-harness init . --clean-nested
+npx --yes github:gjwoo1996/Personal-Agent-Harness init . --clean-nested
 ```
 
 `--clean-nested`는 설치 후 프로젝트 안의 `Personal-Agent-Harness/`를 삭제합니다.
@@ -87,7 +101,7 @@ npx personal-agent-harness init . --clean-nested
 ### dry-run
 
 ```bash
-npx personal-agent-harness install . --dry-run
+npx --yes github:gjwoo1996/Personal-Agent-Harness install . --dry-run
 ```
 
 실제 변경 없이 생성하거나 갱신할 파일을 확인합니다.
@@ -97,8 +111,8 @@ npx personal-agent-harness install . --dry-run
 devcontainer 스캐폴드와 `.gitignore` block은 기본 registry 밖에서 별도로 설치합니다.
 
 ```bash
-npx personal-agent-harness install . --components rules,devcontainer,gitignore
-npx personal-agent-harness verify .
+npx --yes github:gjwoo1996/Personal-Agent-Harness install . --components rules,devcontainer,gitignore
+npx --yes github:gjwoo1996/Personal-Agent-Harness verify .
 ```
 
 ```text
@@ -118,7 +132,7 @@ target-project/
 monorepo에서 `Personal-Agent-Harness/` 자체를 수정할 때는 부모 프로젝트 루트에 `harness-dev` rule을 한 번 설치할 수 있습니다.
 
 ```bash
-npx personal-agent-harness install . --components harness-dev
+npx --yes github:gjwoo1996/Personal-Agent-Harness install . --components harness-dev
 ```
 
 - 기본 `init`과 `update`에는 포함되지 않습니다.

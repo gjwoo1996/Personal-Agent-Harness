@@ -6,15 +6,15 @@
 
 | 명령 | 용도 |
 |------|------|
-| `npx personal-agent-harness init <target>` | 권장 첫 적용: `install` + `verify` |
-| `npx personal-agent-harness update <target>` | 갱신: `install` + `verify` |
-| `npx personal-agent-harness verify <target>` | 설치 상태 검증 |
-| `npx personal-agent-harness status <target>` | 설치 버전·업데이트 여부 |
-| `pah` | 글로벌 설치 시 bin (`npm install -g personal-agent-harness`) |
+| `npx --yes github:gjwoo1996/Personal-Agent-Harness init <target>` | 권장 첫 적용: `install` + `verify` |
+| `npx --yes github:gjwoo1996/Personal-Agent-Harness update <target>` | 갱신: `install` + `verify` |
+| `npx --yes github:gjwoo1996/Personal-Agent-Harness verify <target>` | 설치 상태 검증 |
+| `npx --yes github:gjwoo1996/Personal-Agent-Harness status <target>` | 설치 버전·업데이트 여부 |
+| `npx pah` | 프로젝트 git dependency로 설치했을 때의 bin |
 
-git checkout 개발·legacy용: `bootstrap.sh`, `setup.sh`, `update.sh`, `bin/pah`
+로컬 git checkout 개발·오프라인용: `bootstrap.sh`, `setup.sh`, `update.sh`, `bin/pah`
 
-npm 패키지에는 `setup.sh`, `update.sh`, `bootstrap.sh`도 포함됩니다. 현재 `pah init/update`가 이 래퍼를 재사용하며, git checkout legacy 경로와 동일한 동작을 유지하기 위해 의도적으로 배포합니다. `pah install`은 직접 호출하므로 별도 래퍼는 두지 않습니다.
+GitHub에서 npm 클라이언트가 해석하는 패키지에는 `setup.sh`, `update.sh`, `bootstrap.sh`도 포함됩니다. 현재 `pah init/update`가 이 래퍼를 재사용하며, 로컬 git checkout 경로와 동일한 동작을 유지하기 위해 의도적으로 배포합니다. `pah install`은 직접 호출하므로 별도 래퍼는 두지 않습니다.
 
 ## 기본 `rules` 설치 결과
 
@@ -133,7 +133,8 @@ pah status <target> [--harness-root <path>]
 
 ```bash
 pah status .
-# update available 시: npx personal-agent-harness@latest update .
+# update available 시:
+npx --yes github:gjwoo1996/Personal-Agent-Harness update .
 ```
 
 ## 현재 제한사항

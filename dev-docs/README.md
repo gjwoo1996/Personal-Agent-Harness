@@ -11,6 +11,12 @@
 | [internal/development.md](./internal/development.md) | 테스트, 변경 후 확인 순서, monorepo `harness-dev` 설정 |
 | [internal/adding-rule-domains.md](./internal/adding-rule-domains.md) | registry 기반 규칙 도메인 추가 절차 |
 
+## 진행 중 로드맵
+
+| 폴더 | 내용 |
+|------|------|
+| [git-distribution/README.md](./git-distribution/README.md) | npm registry 중단 → GitHub 전용 (C안). §0 고정 결정·핸드오프 + Phase 7 AI/git 데브컨테이너 |
+
 ## 작업 기록
 
 | 폴더 | 내용 |

@@ -17,35 +17,51 @@
 >
 > **jq 설치:** `brew install jq` (macOS) / `apt-get install jq` (Ubuntu/Debian)
 
-## 사용법 (npm/npx — 권장)
+## 사용법 (GitHub `npx` — 권장)
 
 대상 **프로젝트 루트**에서 실행합니다. 프로젝트 안에 harness 저장소가 생기지 않습니다.
+
+> npmjs의 `personal-agent-harness`는 더 이상 갱신되지 않습니다. GitHub를 사용하세요.
 
 ### 첫 적용
 
 ```bash
-npx personal-agent-harness init .
+npx --yes github:gjwoo1996/Personal-Agent-Harness init .
 ```
 
 ### 업데이트
 
 ```bash
-npx personal-agent-harness@latest update .
+npx --yes github:gjwoo1996/Personal-Agent-Harness update .
 ```
 
 ### 검증·상태
 
 ```bash
-npx personal-agent-harness verify .
-npx personal-agent-harness status .
+npx --yes github:gjwoo1996/Personal-Agent-Harness verify .
+npx --yes github:gjwoo1996/Personal-Agent-Harness status .
 ```
 
-### 자주 쓰는 경우 (글로벌 설치)
+재현 가능한 설치가 필요하면 릴리스 태그를 고정합니다.
 
 ```bash
-npm install -g personal-agent-harness
-pah init /path/to/my-project
-pah update /path/to/my-project
+npx --yes github:gjwoo1996/Personal-Agent-Harness#vX.Y.Z update .
+```
+
+### 프로젝트 devDependency로 고정
+
+```json
+{
+  "devDependencies": {
+    "personal-agent-harness": "github:gjwoo1996/Personal-Agent-Harness#vX.Y.Z"
+  }
+}
+```
+
+```bash
+npm install
+npx pah init .
+npx pah update .
 ```
 
 자세한 내용은 [docs/usage.md](docs/usage.md)를 참고하세요.
@@ -60,4 +76,4 @@ pah update /path/to/my-project
 | [docs/reference.md](docs/reference.md) | `pah` CLI 레퍼런스, 설치 결과, verify 항목 |
 | [docs/troubleshooting.md](docs/troubleshooting.md) | 문제 해결, 백업 복구 |
 
-하네스 개발·배포(git checkout, npm publish 포함)는 [dev-docs/internal/development.md](dev-docs/internal/development.md)를 참고하세요.
+하네스 개발·태그 릴리스는 [dev-docs/internal/development.md](dev-docs/internal/development.md)를 참고하세요.

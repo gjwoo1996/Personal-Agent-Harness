@@ -5,6 +5,5 @@
 
 | 문서 | 내용 |
 |------|------|
-| [development.md](./development.md) | 하네스 개발, 테스트, devcontainer, npm publish |
+| [development.md](./development.md) | 하네스 개발, 테스트, devcontainer, Git 태그 릴리스 |
 | [adding-rule-domains.md](./adding-rule-domains.md) | registry 기반 규칙 도메인 추가 절차 |
-

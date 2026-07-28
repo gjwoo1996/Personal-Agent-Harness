@@ -83,12 +83,20 @@ bash tests/test_pah.sh
 
 1. `bash tests/test_pah.sh`
 2. `git diff --check`
-3. 임시 프로젝트에서 수동 시나리오 확인:
+3. 임시 프로젝트에서 로컬 CLI 시나리오 확인:
 
 ```bash
 mkdir -p /tmp/pah-demo && cd /tmp/pah-demo && git init
 <PAH_HOME>/bin/pah init .
 <PAH_HOME>/bin/pah update .
+```
+
+4. 릴리스 태그를 push한 뒤 GitHub 패키지 시나리오 확인:
+
+```bash
+npx --yes github:gjwoo1996/Personal-Agent-Harness#vX.Y.Z init /tmp/pah-demo
+npx --yes github:gjwoo1996/Personal-Agent-Harness#vX.Y.Z verify /tmp/pah-demo
+npx --yes github:gjwoo1996/Personal-Agent-Harness#vX.Y.Z status /tmp/pah-demo
 ```
 
 ## Dev container (권장)
@@ -106,25 +114,41 @@ WSL에서 Windows npm(`/mnt/c/Program Files/nodejs/`)이 WSL 경로의 `package.
 
 ```bash
 bash tests/test_pah.sh
-npm pack
-npm login          # 최초 1회
-npm publish        # OTP (2FA)
+npm pack           # 선택: package.json files 화이트리스트 검증
 ```
 
-## npm publish (메인테이너, devcontainer 없이)
+## Git 태그 릴리스
 
-WSL **내부**에서 Linux npm을 사용하세요. Windows 쪽 `npm`은 `\\wsl$` 경로를 읽지 못할 수 있습니다.
+GitHub 저장소가 유일한 배포 채널입니다. npm registry에는 새 버전을 publish하지 않습니다.
+`VERSION`, `package.json.version`, Git 태그 `vX.Y.Z`는 항상 같은 버전을 가리켜야 합니다.
 
 ```bash
-# WSL Ubuntu 터미널 (nvm/fnm으로 Node 24 권장)
 cd ~/gw-personal/Personal-Agent-Harness
-npm whoami          # 로그인 확인
-npm pack            # tarball 내용 검증
-npm publish         # OTP 입력 (2FA)
+
+# 1) 변경 검증
+bash tests/test_pah.sh
+git diff --check
+npm pack --dry-run  # 선택: files 화이트리스트 확인
+
+# 2) VERSION과 package.json.version을 함께 올리고 동일한지 확인
+PAH_VERSION="$(tr -d '\r\n' < VERSION)"
+PACKAGE_VERSION="$(node -e 'process.stdout.write(require("./package.json").version)')"
+test "$PAH_VERSION" = "$PACKAGE_VERSION"
+
+# 3) 릴리스 변경을 커밋한 뒤 작업 트리가 깨끗한지 확인
+git status --short
+# 출력이 없어야 한다. 태그는 미커밋 변경을 포함하지 않는다.
+
+# 4) 동일 버전의 annotated tag 생성
+git tag -a "v${PAH_VERSION}" -m "Personal-Agent-Harness v${PAH_VERSION}"
+
+# 5) 브랜치와 태그 push (명시적 사용자 승인 후)
+git push origin <release-branch>
+git push origin "v${PAH_VERSION}"
+
+# 6) push한 태그를 직접 검증
+npx --yes github:gjwoo1996/Personal-Agent-Harness#vX.Y.Z status /tmp/pah-demo
 ```
 
-publish 후 다른 프로젝트에서:
-
-```bash
-npx personal-agent-harness init .
-```
+`#main`은 재현 가능한 릴리스 검증에 사용하지 않습니다. 대상 프로젝트도 가능한 한 `#vX.Y.Z`를 고정합니다.
+기존 npm 버전과 같은 번호를 새 내용에 재사용하지 말고, 릴리스 커밋 전에 `VERSION`과 `package.json.version`을 함께 다음 버전으로 올립니다.
