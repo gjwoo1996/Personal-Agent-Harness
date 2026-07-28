@@ -7,6 +7,7 @@
   "updateRemoteUserUID": true,
   "initializeCommand": "bash .devcontainer/commands/initializeCommand.sh ${localWorkspaceFolder} ${containerWorkspaceFolder} ${localWorkspaceFolderBasename} ${containerWorkspaceFolderBasename}",
   "postCreateCommand": ".devcontainer/commands/post-create.sh",
+  "postStartCommand": ".devcontainer/commands/post-start.sh",
   "features": {
     "ghcr.io/devcontainers/features/github-cli:1": {
       "version": "2.93.0"

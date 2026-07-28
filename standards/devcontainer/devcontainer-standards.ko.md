@@ -41,6 +41,8 @@ Composer의 실무 개발자 경험을 기본 구조로 삼고, Codex의 재현�
 ├── Dockerfile
 ├── commands/
 │   ├── initializeCommand.sh
+│   ├── ensure-ai-volume-permissions.sh
+│   ├── ensure-git-auth.sh
 │   ├── post-create.sh
 │   └── post-start.sh
 ├── .env
@@ -176,12 +178,27 @@ named volume을 사용합니다.
 
 항상 지킬 규칙:
 
-- `{project-slug}-claude-config`, `{project-slug}-codex-config`처럼 안정적인 볼륨 이름을 사용합니다.
+- `{project-slug}-claude-config`, `{project-slug}-codex-config`, `{project-slug}-cursor-skills`, `{project-slug}-cursor-plugins`, `{project-slug}-bun-home`, `{project-slug}-gh-config`처럼 안정적인 볼륨 이름을 사용합니다.
 - AI 상태 볼륨 이름에 `${devcontainerId}`를 넣지 않습니다.
 - 디렉토리 상태와 파일 상태를 모두 보존합니다. 필요하면 Claude의 `.claude.json`도 포함합니다.
+- 관련 도구를 사용할 때는 Cursor skills/plugins, Bun home, GitHub CLI 설정을 각각의 named volume에 보존합니다.
+- create와 start lifecycle 양쪽에서 named volume 소유권을 멱등적으로 보정합니다.
 - 선택한 전략을 `.devcontainer/README.md`에 문서화합니다.
 
 OCI 또는 SSH 파일처럼 실제로 필요한 외부 인증 파일은 readonly host bind로 마운트할 수 있습니다. 이 경우 경로, 목적, 예상 권한을 문서화합니다.
+
+## Git identity와 GitHub HTTPS 인증
+
+개인 WSL 환경에서는 책임을 다음처럼 나눕니다.
+
+- 호스트의 `user.name`과 `user.email`을 재사용할 때 `~/.gitconfig`를 read-only로 bind mount합니다.
+- `gh auth login`이 rebuild 후에도 유지되도록 `~/.config/gh`를 프로젝트별 named volume에 보존합니다.
+- `~/.config/git/config`에 `credential.https://github.com.helper`와 `credential.https://gist.github.com.helper` 값을 `!gh auth git-credential`로 기록합니다.
+- XDG Git 설정은 `ensure-git-auth.sh`에서 멱등적으로 구성하며, 호스트 global config가 read-only일 때 `gh auth setup-git`을 사용하지 않습니다.
+
+배포 템플릿에는 gh named volume과 helper 스크립트를 포함해야 합니다.
+팀·CI·공유 머신은 명시적으로 선택해야 하므로 호스트 `.gitconfig` bind는 주석 상태로 둡니다.
+SSH agent, `~/.ssh` mount, GitHub 이외 호스트 인증은 프로젝트별 예외입니다.
 
 ## 비밀값과 환경 변수
 
@@ -216,6 +233,7 @@ OCI 또는 SSH 파일처럼 실제로 필요한 외부 인증 파일은 readonly
 - 프로젝트 의존성을 설치합니다.
 - 런타임과 AI CLI 버전을 검증합니다.
 - 필요한 경우 `git safe.directory`를 설정합니다.
+- AI volume 권한을 보정하고 XDG GitHub credential helper를 구성합니다.
 - 멱등적이어야 합니다.
 
 `post-start.sh`:
@@ -224,6 +242,7 @@ OCI 또는 SSH 파일처럼 실제로 필요한 외부 인증 파일은 readonly
 - 가볍게 유지합니다.
 - 빠른 권한 확인이나 상태 힌트 정도에만 사용합니다.
 - AI 상태가 named volume으로 보존되는 경우 가볍고 멱등적인 AI skill 복구를 실행할 수 있습니다.
+- AI skill 복구보다 먼저 AI volume 권한을 보정해야 합니다.
 
 다음처럼 파괴적이거나 상태를 바꾸는 앱 작업은 자동 실행하지 않습니다.
 
@@ -301,6 +320,8 @@ superpowers와 gstack/browse 설정의 기준 구현은 maintainer용
 - Claude Code가 포함된 경우 `claude --version` 성공
 - Codex CLI가 포함된 경우 `codex --version` 성공
 - 선택한 저장 전략에 맞게 rebuild 후 AI 상태 유지
+- 해당 named volume을 구성했다면 Cursor skills/plugins, Bun home, gh 인증이 rebuild 후에도 유지
+- GitHub HTTPS helper가 `~/.config/git/config`에서 조회되고 read-only 호스트 `.gitconfig`는 변경되지 않음
 - 앱 의존성 설치 성공
 - 웹 앱이 있으면 메인 앱 포트 smoke test 성공
 - 커밋된 파일에 실제 비밀값이 없음

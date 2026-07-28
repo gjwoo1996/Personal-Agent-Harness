@@ -40,6 +40,8 @@ Use this layout for new dev containers:
 ├── Dockerfile
 ├── commands/
 │   ├── initializeCommand.sh
+│   ├── ensure-ai-volume-permissions.sh
+│   ├── ensure-git-auth.sh
 │   ├── post-create.sh
 │   └── post-start.sh
 ├── .env
@@ -175,12 +177,28 @@ Use named volumes when:
 
 Always:
 
-- Use stable volume names such as `{project-slug}-claude-config` and `{project-slug}-codex-config`.
+- Use stable volume names such as `{project-slug}-claude-config`, `{project-slug}-codex-config`, `{project-slug}-cursor-skills`, `{project-slug}-cursor-plugins`, `{project-slug}-bun-home`, and `{project-slug}-gh-config`.
 - Never include `${devcontainerId}` in AI state volume names.
 - Preserve both directory state and file state, including Claude's `.claude.json` when needed.
+- Preserve Cursor skills/plugins, Bun home, and GitHub CLI configuration in dedicated named volumes when those tools are present.
+- Repair named-volume ownership idempotently during both create and start lifecycle paths.
 - Document the selected strategy in `.devcontainer/README.md`.
 
 Read-only host binds are acceptable for external credentials such as OCI or SSH files when the project genuinely needs them. Document the path, purpose, and expected permissions.
+
+## Git Identity And GitHub HTTPS Authentication
+
+For a personal WSL environment, use this responsibility split:
+
+- Bind host `~/.gitconfig` read-only when host `user.name` and `user.email` should be reused.
+- Preserve `~/.config/gh` in a project-scoped named volume so `gh auth login` survives rebuilds.
+- Write `credential.https://github.com.helper` and `credential.https://gist.github.com.helper` to `~/.config/git/config` with the value `!gh auth git-credential`.
+- Configure the XDG Git file idempotently in `ensure-git-auth.sh`; do not use `gh auth setup-git` when the host global config is read-only.
+
+The distributed template must include the gh named volume and helper script.
+Keep the host `.gitconfig` bind commented because team, CI, and shared-machine
+environments must opt in explicitly. SSH agents, `~/.ssh` mounts, and non-GitHub
+credential hosts are project-specific exceptions.
 
 ## Secrets And Environment Variables
 
@@ -215,6 +233,7 @@ Use `.devcontainer/commands/` only.
 - Installs project dependencies.
 - Verifies runtime and AI CLI versions.
 - Configures `git safe.directory` when required.
+- Repairs AI volume permissions and configures the XDG GitHub credential helper.
 - Must be idempotent.
 
 `post-start.sh`:
@@ -223,6 +242,7 @@ Use `.devcontainer/commands/` only.
 - Keep it lightweight.
 - Use it only for quick permission checks or health hints.
 - May run lightweight, idempotent AI skill repair when AI state is backed by named volumes.
+- Should repair AI volume permissions before any skill repair.
 
 Do not run destructive or state-changing app operations automatically:
 
@@ -300,6 +320,8 @@ A devcontainer change is not complete until these checks are considered and the 
 - `claude --version` succeeds when Claude Code is included.
 - `codex --version` succeeds when Codex CLI is included.
 - AI state remains available after rebuild according to the selected storage strategy.
+- Cursor skills/plugins, Bun home, and gh authentication remain available after rebuild when their named volumes are configured.
+- The GitHub HTTPS helper resolves from `~/.config/git/config`; a read-only host `.gitconfig` remains unchanged.
 - App dependency installation succeeds.
 - Main app port smoke test succeeds when the project has a web app.
 - No real secret values appear in committed files.

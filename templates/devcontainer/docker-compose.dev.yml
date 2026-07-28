@@ -10,6 +10,17 @@ services:
       - claude-config:/home/vscode/.claude
       - claude-json:/home/vscode/.ai-state/claude
       - codex-config:/home/vscode/.codex
+      - cursor-skills:/home/vscode/.cursor/skills
+      - cursor-plugins:/home/vscode/.cursor/plugins
+      - bun-home:/home/vscode/.bun
+      - gh-config:/home/vscode/.config/gh
+      # Optional identity bind for a personal WSL environment:
+      # - type: bind
+      #   source: ${HOME}/.gitconfig
+      #   target: /home/vscode/.gitconfig
+      #   read_only: true
+      #   bind:
+      #     create_host_path: false
     command: sleep infinity
 
 volumes:
@@ -19,3 +30,11 @@ volumes:
     name: ${aiStateVolumePrefix}-claude-json
   codex-config:
     name: ${aiStateVolumePrefix}-codex-config
+  cursor-skills:
+    name: ${aiStateVolumePrefix}-cursor-skills
+  cursor-plugins:
+    name: ${aiStateVolumePrefix}-cursor-plugins
+  bun-home:
+    name: ${aiStateVolumePrefix}-bun-home
+  gh-config:
+    name: ${aiStateVolumePrefix}-gh-config
