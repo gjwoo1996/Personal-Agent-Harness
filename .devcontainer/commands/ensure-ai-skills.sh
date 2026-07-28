@@ -26,6 +26,9 @@ ensure_ai_volume_permissions() {
 }
 
 ensure_bun() {
+  export BUN_INSTALL="${BUN_INSTALL:-$HOME/.bun}"
+  export PATH="${BUN_INSTALL}/bin:${PATH}"
+
   if command -v bun >/dev/null 2>&1 && bun --version | grep -Fxq "$BUN_VERSION"; then
     echo "Bun: already installed (${BUN_VERSION})"
     return 0
@@ -33,8 +36,6 @@ ensure_bun() {
 
   echo "Bun: installing ${BUN_VERSION}"
   if curl -fsSL https://bun.sh/install | bash -s "bun-v${BUN_VERSION}"; then
-    export BUN_INSTALL="${BUN_INSTALL:-$HOME/.bun}"
-    export PATH="${BUN_INSTALL}/bin:${PATH}"
     command -v bun >/dev/null 2>&1
   else
     warn "Bun install failed; skipping gstack setup"
@@ -50,21 +51,21 @@ ensure_repo() {
   if [ ! -d "$path/.git" ]; then
     echo "Repo: cloning $url to $path"
     rm -rf "$path"
-    git clone "$url" "$path"
+    git clone "$url" "$path" || return 1
   else
     echo "Repo: fetching $path"
-    git -C "$path" fetch --tags --prune origin
+    git -C "$path" fetch --tags --prune origin || return 1
   fi
 
   if [ -n "$ref" ]; then
     git -C "$path" fetch --tags origin "$ref" || true
-    git -C "$path" checkout --detach "$ref"
+    git -C "$path" checkout --detach "$ref" || return 1
   else
     git -C "$path" remote set-head origin -a >/dev/null 2>&1 || true
     local default_ref
     default_ref="$(git -C "$path" symbolic-ref --quiet --short refs/remotes/origin/HEAD || true)"
     if [ -n "$default_ref" ]; then
-      git -C "$path" checkout --detach "$default_ref"
+      git -C "$path" checkout --detach "$default_ref" || return 1
     fi
   fi
 }
@@ -181,13 +182,20 @@ ensure_gstack() {
   export PATH="${BUN_INSTALL}/bin:${PATH}"
 
   echo "gstack: ensuring repository"
-  ensure_repo "$GSTACK_REPO" "$GSTACK_PATH" "$GSTACK_REF"
+  if ! ensure_repo "$GSTACK_REPO" "$GSTACK_PATH" "$GSTACK_REF"; then
+    warn "gstack repository unavailable; skipping gstack setup"
+    return 0
+  fi
 
   (
     cd "$GSTACK_PATH"
-    bun install
+    if ! bun install; then
+      warn "gstack dependency install failed; skipping host setup"
+      exit 0
+    fi
     bun run setup --host claude || warn "gstack setup for Claude failed"
     bun run setup --host codex || warn "gstack setup for Codex failed"
+    bun run setup --host cursor || warn "gstack setup for Cursor failed"
   )
 }
 

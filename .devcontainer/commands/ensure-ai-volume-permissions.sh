@@ -4,8 +4,16 @@ set -euo pipefail
 
 ensure_ai_volume_permissions() {
   local dir
-  for dir in "${HOME}/.claude" "${HOME}/.ai-state" "${HOME}/.codex"; do
-    if [ -e "$dir" ] && [ "$(stat -c '%u' "$dir")" -ne "$(id -u)" ]; then
+  for dir in \
+    "${HOME}/.claude" \
+    "${HOME}/.ai-state" \
+    "${HOME}/.codex" \
+    "${HOME}/.cursor/skills" \
+    "${HOME}/.cursor/plugins" \
+    "${HOME}/.bun" \
+    "${HOME}/.config/gh"; do
+    mkdir -p "$dir"
+    if [ "$(stat -c '%u' "$dir")" -ne "$(id -u)" ]; then
       echo "Fixing permissions on $dir (named volume owned by root)"
       sudo chown -R "$(id -un):$(id -gn)" "$dir"
     fi

@@ -1,7 +1,18 @@
 volumes:
   pah-claude-config:
+    name: pah-claude-config
   pah-claude-json:
+    name: pah-claude-json
   pah-codex-config:
+    name: pah-codex-config
+  pah-cursor-skills:
+    name: pah-cursor-skills
+  pah-cursor-plugins:
+    name: pah-cursor-plugins
+  pah-bun-home:
+    name: pah-bun-home
+  pah-gh-config:
+    name: pah-gh-config
 
 services:
   workspace:
@@ -15,6 +26,16 @@ services:
       - pah-claude-config:/home/vscode/.claude
       - pah-claude-json:/home/vscode/.ai-state/claude
       - pah-codex-config:/home/vscode/.codex
+      - pah-cursor-skills:/home/vscode/.cursor/skills
+      - pah-cursor-plugins:/home/vscode/.cursor/plugins
+      - pah-bun-home:/home/vscode/.bun
+      - pah-gh-config:/home/vscode/.config/gh
+      - type: bind
+        source: ${HOME}/.gitconfig
+        target: /home/vscode/.gitconfig
+        read_only: true
+        bind:
+          create_host_path: false
     cap_add:
       - NET_ADMIN
       - NET_RAW

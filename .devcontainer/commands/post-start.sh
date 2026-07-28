@@ -2,5 +2,6 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+"$SCRIPT_DIR/ensure-ai-volume-permissions.sh"
 "$SCRIPT_DIR/ensure-ai-skills.sh"
 "$SCRIPT_DIR/init-firewall.sh"

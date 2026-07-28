@@ -4,7 +4,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 "$SCRIPT_DIR/ensure-ai-volume-permissions.sh"
 
-git config --global --add safe.directory "$PWD" || true
+mkdir -p "$HOME/.config/git"
+git config --file "$HOME/.config/git/config" --fixed-value \
+  --unset-all safe.directory "$PWD" 2>/dev/null || true
+git config --file "$HOME/.config/git/config" --add safe.directory "$PWD"
+"$SCRIPT_DIR/ensure-git-auth.sh"
 
 mkdir -p /home/vscode/.ai-state/claude
 if [ -e /home/vscode/.claude.json ] && [ ! -L /home/vscode/.claude.json ]; then
@@ -65,4 +69,4 @@ fi
 echo ""
 echo "Harness devcontainer ready."
 echo "  Tests:  bash tests/test_pah.sh"
-echo "  npm:    npm pack   (run npm login before npm publish)"
+echo "  Package layout (optional): npm pack --dry-run"

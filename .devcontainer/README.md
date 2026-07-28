@@ -1,6 +1,6 @@
 # Harness Maintainer Dev Container
 
-Dev container for **Personal-Agent-Harness repository development** (bash tests, npm pack/publish).
+Dev container for **Personal-Agent-Harness repository development** (bash tests, optional package-layout checks, and GitHub tag releases).
 
 This is **not** the target-project scaffold under `templates/devcontainer/`. That template is installed on other projects via `pah install --components devcontainer`.
 
@@ -11,8 +11,7 @@ Authoritative standard: `standards/devcontainer/devcontainer-standards.md`
 | Workflow | Command |
 |----------|---------|
 | Harness tests | `bash tests/test_pah.sh` |
-| npm tarball check | `npm pack` |
-| npm publish | `npm login` then `npm publish` |
+| Package-layout check (optional) | `npm pack --dry-run` |
 | GitHub (PR, issues) | `gh auth login` then `gh pr create`, etc. |
 | Manual demo | `bin/pah init /tmp/pah-demo` |
 
@@ -35,14 +34,15 @@ Use **Reopen in Container** from the command palette.
 ## First-time setup
 
 1. `initializeCommand.sh` writes `.devcontainer/.env` with workspace paths and the pinned Codex CLI version.
-2. Rebuild the container if you change the Codex CLI version in `.env`.
-3. Run `npm login` inside the container before the first `npm publish`.
+2. Ensure the host has `~/.gitconfig` with at least `user.name` and `user.email`; the maintainer Compose file mounts it read-only.
+3. Rebuild the container if you change the Codex CLI version in `.env`.
+4. Run `gh auth login` once. The named `pah-gh-config` volume preserves the login across rebuilds.
 
 ## GitHub CLI
 
 Installed via devcontainer feature `ghcr.io/devcontainers/features/github-cli:1` (pinned in `devcontainer.json`).
 
-Authenticate once per volume:
+Authenticate once per `pah-gh-config` volume:
 
 ```bash
 gh auth login
@@ -69,13 +69,17 @@ Claude Code and Codex CLI state persist across **Rebuild Container** via Docker 
 | `pah-claude-config` | `/home/vscode/.claude` | Login, sessions, plugins |
 | `pah-claude-json` | `/home/vscode/.ai-state/claude` | Claude `.claude.json` file state |
 | `pah-codex-config` | `/home/vscode/.codex` | Login, sessions, plugins, `config.toml` |
+| `pah-cursor-skills` | `/home/vscode/.cursor/skills` | Cursor-installed skills |
+| `pah-cursor-plugins` | `/home/vscode/.cursor/plugins` | Cursor marketplace plugins |
+| `pah-bun-home` | `/home/vscode/.bun` | Pinned Bun runtime and cache used by gstack |
+| `pah-gh-config` | `/home/vscode/.config/gh` | GitHub CLI authentication and settings |
 
-On first container create, named volumes may mount as `root`. `post-create.sh` runs `ensure-ai-volume-permissions.sh` before any AI CLI setup.
+On first container create, named volumes may mount as `root`. Both create and start lifecycle paths run `ensure-ai-volume-permissions.sh`; start repairs permissions before any skill setup.
 
 Reset all AI state (login + superpowers + sessions):
 
 ```bash
-docker volume rm pah-claude-config pah-claude-json pah-codex-config
+docker volume rm pah-claude-config pah-claude-json pah-codex-config pah-cursor-skills pah-cursor-plugins pah-bun-home pah-gh-config
 ```
 
 Then **Rebuild Container** to recreate empty volumes and rerun `post-create.sh`.
@@ -96,7 +100,7 @@ on container create and start. Defaults and optional repo refs live in
 |------|--------|
 | Claude Code | `superpowers@superpowers-marketplace` |
 | Codex CLI | Skills symlink (`~/.agents/skills/superpowers` → `~/.codex/superpowers/skills`); plugin `superpowers@openai-curated` when marketplace is ready |
-| gstack/browse | `GSTACK_REPO` cloned to `~/.codex/gstack`, configured for Claude and Codex with Bun |
+| gstack/browse | `GSTACK_REPO` cloned to `~/.codex/gstack`, configured for Claude, Codex, and Cursor with Bun |
 
 On first `post-create`, the Codex marketplace may not be initialized yet. The install script clones [obra/superpowers](https://github.com/obra/superpowers) into the `pah-codex-config` volume and symlinks skills (reliable). Plugin install is attempted when `openai-curated` is available.
 
@@ -130,27 +134,41 @@ GitHub, npm, Anthropic, OpenAI, Bun, and Playwright/Chromium download endpoints.
 If `iptables` or `ipset` is unavailable, it prints `WARN:` and leaves networking
 unchanged.
 
-## npm credentials
+## Git identity and GitHub HTTPS authentication
 
-**Default:** `npm login` inside the container. Credentials live in `~/.npmrc` and are lost on full image rebuild.
+The maintainer Compose file binds host `~/.gitconfig` to the container read-only for `user.name` and `user.email`. Create it on the host before opening the container:
 
-**Optional (personal machine):** bind-mount host `~/.npmrc` read-only in `docker-compose.dev.yml`:
-
-```yaml
-volumes:
-  - ${localEnv:HOME}/.npmrc:/home/vscode/.npmrc:ro
+```bash
+git config --global user.name "Your Name"
+git config --global user.email "you@example.com"
 ```
 
-Do not commit real tokens. Do not use host mounts on shared machines.
+`post-create.sh` runs `commands/ensure-git-auth.sh`, which writes GitHub and Gist credential helpers to the separate XDG file `~/.config/git/config`:
+
+```text
+!gh auth git-credential
+```
+
+Authenticate and verify HTTPS Git access:
+
+```bash
+gh auth login
+gh auth status
+git config --file "$HOME/.config/git/config" --get credential.https://github.com.helper
+git ls-remote https://github.com/gjwoo1996/Personal-Agent-Harness.git HEAD
+```
+
+The host file remains read-only; do not run `gh auth setup-git` against it. The `pah-gh-config` volume keeps the `gh` token across rebuilds. This personal-WSL setup is not a shared-machine credential model; SSH agent and `~/.ssh` mounts are out of scope.
 
 ## Exceptions from distributed template
 
 | Item | This devcontainer | Target `templates/devcontainer/` |
 |------|-------------------|----------------------------------|
 | Audience | Harness maintainers | Applied projects |
-| Distributed via npm | No | Yes (`pah install`) |
+| Distributed through the GitHub package | No | Yes (`pah install`) |
 | AI CLIs | Claude Feature + pinned Codex | Claude Feature + pinned Codex |
-| AI state volumes | Named volumes (`pah-claude-config`, `pah-claude-json`, `pah-codex-config`) | Project chooses per standard |
+| AI state volumes | Named volumes for Claude, Codex, Cursor, Bun, and gh | Named volumes for Claude, Codex, Cursor, Bun, and gh |
+| Host `.gitconfig` | Read-only bind, default-on | Commented personal-WSL example |
 | Superpowers/gstack | Auto-repaired in `post-create.sh` and `post-start.sh` | Not included by default |
 | Firewall | Default-on after AI setup | Opt-in example only |
 
@@ -171,6 +189,8 @@ docker compose -f .devcontainer/docker-compose.dev.yml config
 whoami                    # vscode
 node --version            # v24.x
 gh --version              # 2.93.0
+gh auth status
+git config --file "$HOME/.config/git/config" --get credential.https://github.com.helper
 claude plugin list | grep superpowers
 codex plugin list | grep superpowers
 bash .devcontainer/commands/ensure-ai-skills.sh
